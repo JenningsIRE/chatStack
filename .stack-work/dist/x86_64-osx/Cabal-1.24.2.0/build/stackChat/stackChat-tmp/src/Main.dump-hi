@@ -1,0 +1,77 @@
+
+==================== FINAL INTERFACE ====================
+2017-10-14 16:15:54.611726 UTC
+
+interface main@main:Main 8002
+  interface hash: dd0a0e93e028ccf2208536aeaaf02916
+  ABI hash: 23fd4e2c54c612492c10a436981993a5
+  export-list hash: d915082c50710a4f783ebc1b39bf410f
+  orphan hash: 693e9af84d3dfcc71e640e005bdc5e2e
+  flag hash: 4620c20d1a77ef0095cb09035e49e8bd
+  sig of: Nothing
+  used TH splices: False
+  where
+exports:
+  Main.main
+  Main.mainLoop
+  Main.runConn
+  Main.Msg
+module dependencies:
+package dependencies: base-4.9.1.0 ghc-prim-0.5.0.0
+                      integer-gmp-1.0.0.1
+                      network-2.6.3.2@network-2.6.3.2-IsLM4TXcLoRI0fmmBYVyQz
+orphans: base-4.9.1.0:GHC.Base base-4.9.1.0:GHC.Float
+         network-2.6.3.2@network-2.6.3.2-IsLM4TXcLoRI0fmmBYVyQz:Network.Socket
+family instance modules: base-4.9.1.0:Control.Applicative
+                         base-4.9.1.0:Data.Either base-4.9.1.0:Data.Functor.Const
+                         base-4.9.1.0:Data.Monoid base-4.9.1.0:Data.Type.Equality
+                         base-4.9.1.0:GHC.Generics base-4.9.1.0:GHC.IO.Exception
+                         base-4.9.1.0:GHC.TypeLits
+import  -/  base-4.9.1.0:Control.Concurrent 2ee6a0a58489520b9a96d8fef10380fa
+import  -/  base-4.9.1.0:Control.Concurrent.Chan 1fe7f9b5e83f172945517098fa943ef0
+import  -/  base-4.9.1.0:Control.Exception a76dd9666251322fe34dbcca3a0817bf
+import  -/  base-4.9.1.0:Control.Exception.Base 1e106916283856f4d9caeddab92cd861
+import  -/  base-4.9.1.0:Control.Monad a6784c5dab0d75c63dabec5a37843f98
+import  -/  base-4.9.1.0:Control.Monad.Fix 1847625fb543f2f5c2510a02760c6b1a
+import  -/  base-4.9.1.0:Data.Function 7aca86bfbd92366def5f260e30cb2628
+import  -/  base-4.9.1.0:GHC.Base c4231c43c07e46080a26bf94094c7aa1
+import  -/  base-4.9.1.0:GHC.Conc.Sync 8d0a228e5fc4d8c110495066f4d52ea1
+import  -/  base-4.9.1.0:GHC.Exception e38fa3e73d54022fb9e3ce06477dfd07
+import  -/  base-4.9.1.0:GHC.IO.Handle ba98a5b34d78cbf48b41fe58a3735c69
+import  -/  base-4.9.1.0:GHC.IO.Handle.Text b65719f3b262b071ab1aabeb72fc9d8b
+import  -/  base-4.9.1.0:GHC.IO.Handle.Types 17aa0e2ab137800e3a31992d780c071f
+import  -/  base-4.9.1.0:GHC.IO.IOMode 2f5782f93b12a0d860d6d661b9fb405c
+import  -/  base-4.9.1.0:GHC.List ab8c4e523e6c479c549d3bcd5fc4a439
+import  -/  base-4.9.1.0:GHC.Num 00bfaa7b2f9d6084913c0697a8a49ec8
+import  -/  base-4.9.1.0:Prelude 22dd289b8469a8fa8dc81cab7b237771
+import  -/  base-4.9.1.0:System.IO c9de64c5f5407c4cf1c52500c4d15200
+import  -/  ghc-prim-0.5.0.0:GHC.Classes 0bdf3d057a415ec1b84a7b1994efbe47
+import  -/  ghc-prim-0.5.0.0:GHC.Types 89f8de4f08018c9177c98d979eae0e45
+import  -/  network-2.6.3.2@network-2.6.3.2-IsLM4TXcLoRI0fmmBYVyQz:Network.Socket 52f9b9614bf018ecf5fec5f2570dad23
+import  -/  network-2.6.3.2@network-2.6.3.2-IsLM4TXcLoRI0fmmBYVyQz:Network.Socket.Types 2eb8a83dc42cc86a12e652ce3294cbda
+83f529351410271e83fed952c86159e1
+  $trModule :: GHC.Types.Module
+f4c7da5d252b420bf9c5a099dc18276c
+  type Msg = (GHC.Types.Int, GHC.Base.String)
+0d166822e21f7182ece26123ea2cf341
+  main :: GHC.Types.IO ()
+aee61d631c90de0e3b2306f876f7d5eb
+  mainLoop ::
+    Network.Socket.Types.Socket
+    -> Control.Concurrent.Chan.Chan Main.Msg
+    -> GHC.Types.Int
+    -> GHC.Types.IO ()
+38149b59ebdff503559ca8479108d22b
+  runConn ::
+    (Network.Socket.Types.Socket, Network.Socket.Types.SockAddr)
+    -> Control.Concurrent.Chan.Chan Main.Msg
+    -> GHC.Types.Int
+    -> GHC.Types.IO ()
+vectorised variables:
+vectorised tycons:
+vectorised reused tycons:
+parallel variables:
+parallel tycons:
+trusted: none
+require own pkg trusted: False
+
