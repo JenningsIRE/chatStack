@@ -21,6 +21,7 @@ main = do
   _ <- forkIO $ fix $ \loop -> do
     (_, _) <- readChan chan
     loop
+
   mainLoop sock chan 0
 
 type Msg = (Int, String)
@@ -28,11 +29,13 @@ type Msg = (Int, String)
 mainLoop :: Socket -> Chan Msg -> Int -> IO ()
 mainLoop sock chan msgNum = do
   conn <- accept sock
-  forkIO (runConn conn chan msgNum)
+  forkIO (runConn conn chan msgNum sock)
+
   mainLoop sock chan $! msgNum + 1
 
-runConn :: (Socket, SockAddr) -> Chan Msg -> Int -> IO ()
-runConn (sock, _) chan msgNum = do
+
+runConn :: (Socket, SockAddr) -> Chan Msg -> Int -> Socket -> IO ()
+runConn (sock, _) chan msgNum parentSock = do
     let broadcast msg = writeChan chan (msgNum, msg)
     hdl <- socketToHandle sock ReadWriteMode
     hSetBuffering hdl NoBuffering
@@ -55,6 +58,8 @@ runConn (sock, _) chan msgNum = do
         case line of
              -- If an exception is caught, send a message and break the loop
              "quit" -> hPutStrLn hdl "Bye!"
+
+             "KILL_SERVICE" -> close parentSock
              -- else, continue looping.
              _      -> broadcast (name ++ ": " ++ line) >> loop
 
