@@ -2,6 +2,7 @@ module Main where
 
 import Network.Socket
 import System.IO
+import System.Environment
 import Control.Exception
 import Control.Concurrent
 import Control.Monad (when)
@@ -11,7 +12,10 @@ main :: IO ()
 main = do
   sock <- socket AF_INET Stream 0
   setSocketOption sock ReuseAddr 1
-  bind sock (SockAddrInet 4242 iNADDR_ANY)
+  number <- getArgs
+  let portNumber = read (number !! 0) :: PortNumber
+  bind sock (SockAddrInet portNumber iNADDR_ANY)
+  putStrLn ("server open on port " ++ (number !! 0))
   listen sock 2
   chan <- newChan
   _ <- forkIO $ fix $ \loop -> do

@@ -1,10 +1,10 @@
 
 ==================== FINAL INTERFACE ====================
-2017-10-14 16:15:54.611726 UTC
+2017-10-15 13:21:11.554943 UTC
 
 interface main@main:Main 8002
-  interface hash: dd0a0e93e028ccf2208536aeaaf02916
-  ABI hash: 23fd4e2c54c612492c10a436981993a5
+  interface hash: 66d529c59c4bd1a5bfaa79db316fa84e
+  ABI hash: 40eb22695851adaa5f49dfdb6a71e2ac
   export-list hash: d915082c50710a4f783ebc1b39bf410f
   orphan hash: 693e9af84d3dfcc71e640e005bdc5e2e
   flag hash: 4620c20d1a77ef0095cb09035e49e8bd
@@ -44,29 +44,139 @@ import  -/  base-4.9.1.0:GHC.IO.IOMode 2f5782f93b12a0d860d6d661b9fb405c
 import  -/  base-4.9.1.0:GHC.List ab8c4e523e6c479c549d3bcd5fc4a439
 import  -/  base-4.9.1.0:GHC.Num 00bfaa7b2f9d6084913c0697a8a49ec8
 import  -/  base-4.9.1.0:Prelude 22dd289b8469a8fa8dc81cab7b237771
+import  -/  base-4.9.1.0:System.Environment 08cb808e8e6a7821e6f8cfa76a977431
 import  -/  base-4.9.1.0:System.IO c9de64c5f5407c4cf1c52500c4d15200
+import  -/  base-4.9.1.0:Text.Read 75c59863e882ebaec4532e9465e2ee9b
 import  -/  ghc-prim-0.5.0.0:GHC.Classes 0bdf3d057a415ec1b84a7b1994efbe47
 import  -/  ghc-prim-0.5.0.0:GHC.Types 89f8de4f08018c9177c98d979eae0e45
 import  -/  network-2.6.3.2@network-2.6.3.2-IsLM4TXcLoRI0fmmBYVyQz:Network.Socket 52f9b9614bf018ecf5fec5f2570dad23
 import  -/  network-2.6.3.2@network-2.6.3.2-IsLM4TXcLoRI0fmmBYVyQz:Network.Socket.Types 2eb8a83dc42cc86a12e652ce3294cbda
-83f529351410271e83fed952c86159e1
+d6831ef04cb9301b090dfae6f7bb7ec7
   $trModule :: GHC.Types.Module
+  {- HasNoCafRefs, Strictness: m,
+     Unfolding: (GHC.Types.Module Main.$trModule2 Main.$trModule1) -}
+847d9fc3b8e6f0b424199f36b4999bb2
+  $trModule1 :: GHC.Types.TrName
+  {- HasNoCafRefs, Strictness: m1,
+     Unfolding: (GHC.Types.TrNameS "Main"#) -}
+24ef6042833e75ffd7aa98b83ecca98d
+  $trModule2 :: GHC.Types.TrName
+  {- HasNoCafRefs, Strictness: m1,
+     Unfolding: (GHC.Types.TrNameS "main"#) -}
+f60936bd086f88c1d033a609da3969a9
+  $wmainLoop ::
+    Foreign.C.Types.CInt
+    -> Network.Socket.Types.Family
+    -> Network.Socket.Types.SocketType
+    -> Network.Socket.Types.ProtocolNumber
+    -> GHC.Prim.MVar#
+         GHC.Prim.RealWorld Network.Socket.Types.SocketStatus
+    -> Control.Concurrent.Chan.Chan Main.Msg
+    -> GHC.Types.Int
+    -> GHC.Prim.State# GHC.Prim.RealWorld
+    -> (# GHC.Prim.State# GHC.Prim.RealWorld, () #)
+  {- Arity: 8,
+     Strictness: <L,U(U)><S,U><L,U><L,U(U)><S,U><L,U(U,U)><L,U(U)><S,U>,
+     Inline: [0] -}
+ca15df9bc0aeca894855af8add28a68a
+  $wrunConn ::
+    Foreign.C.Types.CInt
+    -> GHC.Prim.MVar#
+         GHC.Prim.RealWorld Network.Socket.Types.SocketStatus
+    -> Control.Concurrent.Chan.Chan Main.Msg
+    -> GHC.Types.Int
+    -> GHC.Prim.State# GHC.Prim.RealWorld
+    -> (# GHC.Prim.State# GHC.Prim.RealWorld, () #)
+  {- Arity: 5, Strictness: <L,U(U)><S,U><L,1*U(U,U)><L,U(U)><S,U>,
+     Inline: [0] -}
 f4c7da5d252b420bf9c5a099dc18276c
   type Msg = (GHC.Types.Int, GHC.Base.String)
-0d166822e21f7182ece26123ea2cf341
+d9c0dee8a685c5ed422401aaa63f23bf
   main :: GHC.Types.IO ()
-aee61d631c90de0e3b2306f876f7d5eb
+  {- Arity: 1, Strictness: <S,U>,
+     Unfolding: InlineRule (0, True, True)
+                Main.main1 `cast` (Sym (GHC.Types.N:IO[0] <()>_R)) -}
+01d62c2c484918d4b5d94b688c90c90e
+  main1 ::
+    GHC.Prim.State# GHC.Prim.RealWorld
+    -> (# GHC.Prim.State# GHC.Prim.RealWorld, () #)
+  {- Arity: 1, Strictness: <S,U> -}
+129a1a814fa667791781f32a098e848d
+  main2 ::
+    GHC.Prim.State# GHC.Prim.RealWorld
+    -> (# GHC.Prim.State# GHC.Prim.RealWorld, () #)
+  {- Arity: 1,
+     Unfolding: (GHC.TopHandler.runMainIO1
+                   @ ()
+                   Main.main1 `cast` (Sym (GHC.Types.N:IO[0] <()>_R))) -}
+eadea7f7152f38f9d2004f365f5f7316
   mainLoop ::
     Network.Socket.Types.Socket
     -> Control.Concurrent.Chan.Chan Main.Msg
     -> GHC.Types.Int
     -> GHC.Types.IO ()
-38149b59ebdff503559ca8479108d22b
+  {- Arity: 4,
+     Strictness: <S(LSLLS(S)),1*U(U(U),U,U,U(U),U(U))><L,U(U,U)><L,U(U)><S,U>,
+     Unfolding: InlineRule (0, True, True)
+                Main.mainLoop1
+                  `cast`
+                (<Network.Socket.Types.Socket>_R
+                 ->_R <Control.Concurrent.Chan.Chan Main.Msg>_R
+                 ->_R <GHC.Types.Int>_R
+                 ->_R Sym (GHC.Types.N:IO[0] <()>_R)) -}
+c57d69f4025b524c4c783b18a63553f5
+  mainLoop1 ::
+    Network.Socket.Types.Socket
+    -> Control.Concurrent.Chan.Chan Main.Msg
+    -> GHC.Types.Int
+    -> GHC.Prim.State# GHC.Prim.RealWorld
+    -> (# GHC.Prim.State# GHC.Prim.RealWorld, () #)
+  {- Arity: 4,
+     Strictness: <S(LSLLS(S)),1*U(U(U),U,U,U(U),U(U))><L,U(U,U)><L,U(U)><S,U>,
+     Inline: INLINE[0],
+     Unfolding: InlineRule (4, True, False)
+                (\ (w :: Network.Socket.Types.Socket)
+                   (w1 :: Control.Concurrent.Chan.Chan Main.Msg)
+                   (w2 :: GHC.Types.Int)
+                   (w3 :: GHC.Prim.State# GHC.Prim.RealWorld)[OneShot] ->
+                 case w of ww { Network.Socket.Types.MkSocket ww1 ww2 ww3 ww4 ww5 ->
+                 case ww5 of ww6 { GHC.MVar.MVar ww7 ->
+                 Main.$wmainLoop ww1 ww2 ww3 ww4 ww7 w1 w2 w3 } }) -}
+19e15377020c5dc126edfdf2f855a66c
   runConn ::
     (Network.Socket.Types.Socket, Network.Socket.Types.SockAddr)
     -> Control.Concurrent.Chan.Chan Main.Msg
     -> GHC.Types.Int
     -> GHC.Types.IO ()
+  {- Arity: 4,
+     Strictness: <S(S(LLLLS(S))L),1*U(1*U(U(U),A,A,A,1*U(U)),A)><L,1*U(U,U)><L,U(U)><S,U>,
+     Unfolding: InlineRule (0, True, True)
+                Main.runConn1
+                  `cast`
+                (<(Network.Socket.Types.Socket, Network.Socket.Types.SockAddr)>_R
+                 ->_R <Control.Concurrent.Chan.Chan Main.Msg>_R
+                 ->_R <GHC.Types.Int>_R
+                 ->_R Sym (GHC.Types.N:IO[0] <()>_R)) -}
+11317d963c18ef7be4ef9b01a132ab27
+  runConn1 ::
+    (Network.Socket.Types.Socket, Network.Socket.Types.SockAddr)
+    -> Control.Concurrent.Chan.Chan Main.Msg
+    -> GHC.Types.Int
+    -> GHC.Prim.State# GHC.Prim.RealWorld
+    -> (# GHC.Prim.State# GHC.Prim.RealWorld, () #)
+  {- Arity: 4,
+     Strictness: <S(S(LLLLS(S))L),1*U(1*U(U(U),A,A,A,1*U(U)),A)><L,1*U(U,U)><L,U(U)><S,U>,
+     Inline: INLINE[0],
+     Unfolding: InlineRule (4, True, False)
+                (\ (w :: (Network.Socket.Types.Socket,
+                          Network.Socket.Types.SockAddr))
+                   (w1 :: Control.Concurrent.Chan.Chan Main.Msg)
+                   (w2 :: GHC.Types.Int)
+                   (w3 :: GHC.Prim.State# GHC.Prim.RealWorld)[OneShot] ->
+                 case w of ww { (,) ww1 ww2 ->
+                 case ww1 of ww3 { Network.Socket.Types.MkSocket ww4 ww5 ww6 ww7 ww8 ->
+                 case ww8 of ww9 { GHC.MVar.MVar ww10 ->
+                 Main.$wrunConn ww4 ww10 w1 w2 w3 } } }) -}
 vectorised variables:
 vectorised tycons:
 vectorised reused tycons:
