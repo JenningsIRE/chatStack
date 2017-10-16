@@ -59,9 +59,10 @@ runConn (sock, addr) chan joinId parentSock = do
         else loop
         ))
 
-    handle (\(SomeException _) -> return ()) $ fix $ \loop -> do
-        line <- fmap init (hGetLine hdl)
-        let msg = msg ++ [line]
+    handle (\(SomeException _) -> return ()) ( fix ( \loop -> do
+        line <- getUserLines hdl
+        let msg = ["this", "is", "a", "test"]
+        let a = unlines msg
         case line of
              -- If an exception is caught, send a message and break the loop
              "quit" -> hPutStrLn hdl "Bye!"
@@ -70,16 +71,32 @@ runConn (sock, addr) chan joinId parentSock = do
 
              "HELO text" -> heloText hdl addr >> loop
 
-             "send"      -> outputParser msg chan joinId >> loop
-
-             -- else, continue looping.
-             _      -> loop
+             _      -> outputParser line chan joinId >> loop
+        ))
 
 
 
     killThread reader                      -- kill after the loop ends
     --broadcast ("<-- " ++ name ++ " left.") -- make a final broadcast
     hClose hdl                             -- close the handle
+
+getUserLines :: Handle -> IO String                      
+getUserLines hdl = go hdl ""
+
+go :: Handle -> String -> IO String
+go hdl contents = do
+  line <- fmap init(hGetLine hdl)
+  case line of
+               "quit" -> return "quit"
+
+               "KILL_SERVICE" -> return "KILL_SERVICE"
+
+               "HELO text" -> return "HELO text"
+
+               "" -> return contents
+
+               _      -> go hdl (contents ++ line ++ "\n")
+
 
 heloText :: Handle -> SockAddr -> IO()
 heloText hdl addr = do
@@ -95,13 +112,15 @@ inputParser hdl line rooms= do
   else return()
   --when (room `elem` rooms) --fails
 
-outputParser :: [String] -> Chan Msg -> Int -> IO()
-outputParser line chan joinId = do
+outputParser :: String -> Chan Msg -> Int -> IO()
+outputParser a chan joinId = do
   let broadcast msg = writeChan chan (joinId, msg)
-  let a = unlines line
+  --let a = unlines line
   broadcast(a)
 
   return ()
+
+
 
 --line <- fmap init (hGetLine hdl)
 --    let Just room = stripPrefix "JOIN_CHATROOM: " line
@@ -114,3 +133,4 @@ outputParser line chan joinId = do
 --    let Just name = stripPrefix "CLIENT_NAME: " line
 
 --    hPutStr hdl ("JOINED_CHATROOM: "++rooms !! 0++"\nCLIENT_IP: "++ip++"\nPORT: "++port++"\nROOM_REF: \nJOIN_ID: \n")
+
