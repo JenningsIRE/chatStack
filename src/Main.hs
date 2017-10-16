@@ -35,7 +35,7 @@ mainLoop sock chan msgNum = do
 
 
 runConn :: (Socket, SockAddr) -> Chan Msg -> Int -> Socket -> IO ()
-runConn (sock, _) chan msgNum parentSock = do
+runConn (sock, addr) chan msgNum parentSock = do
     let broadcast msg = writeChan chan (msgNum, msg)
     hdl <- socketToHandle sock ReadWriteMode
     hSetBuffering hdl NoBuffering
@@ -60,9 +60,18 @@ runConn (sock, _) chan msgNum parentSock = do
              "quit" -> hPutStrLn hdl "Bye!"
 
              "KILL_SERVICE" -> close parentSock
+
+             "HELO text" -> heloText hdl addr >> loop
+
              -- else, continue looping.
              _      -> broadcast (name ++ ": " ++ line) >> loop
 
     killThread reader                      -- kill after the loop ends
     broadcast ("<-- " ++ name ++ " left.") -- make a final broadcast
     hClose hdl                             -- close the handle
+
+heloText :: Handle -> SockAddr -> IO()
+heloText hdl addr = do
+  (Just hostName, Just serviceName) <- getNameInfo [] True True addr
+  hPutStr hdl ("HELO text\nIP:"++hostName++"\nPort:"++serviceName++"\nStudentID:13326255\n")
+
