@@ -1,9 +1,9 @@
 
 ==================== FINAL INTERFACE ====================
-2017-10-16 01:01:23.231364 UTC
+2017-10-16 01:34:21.477222 UTC
 
 interface main@main:Main 8002
-  interface hash: 81e26e7c43d9bbcd16ad194594f613e6
+  interface hash: 5f5f435a00adf446e6aa83c96d502f80
   ABI hash: 05fe74764febad33ceb44e15a1e438c8
   export-list hash: cb6c5364a654551dce45384a78703323
   orphan hash: 693e9af84d3dfcc71e640e005bdc5e2e
@@ -35,6 +35,8 @@ import  -/  base-4.9.1.0:Control.Exception.Base 1e106916283856f4d9caeddab92cd861
 import  -/  base-4.9.1.0:Control.Monad a6784c5dab0d75c63dabec5a37843f98
 import  -/  base-4.9.1.0:Control.Monad.Fix 1847625fb543f2f5c2510a02760c6b1a
 import  -/  base-4.9.1.0:Data.Function 7aca86bfbd92366def5f260e30cb2628
+import  -/  base-4.9.1.0:Data.List 07ae2acca6538aa0800bd0a993ac6ac1
+import  -/  base-4.9.1.0:Data.OldList 27987919d8da2f92e3f472ca81f730f8
 import  -/  base-4.9.1.0:GHC.Base c4231c43c07e46080a26bf94094c7aa1
 import  -/  base-4.9.1.0:GHC.Conc.Sync 8d0a228e5fc4d8c110495066f4d52ea1
 import  -/  base-4.9.1.0:GHC.Exception e38fa3e73d54022fb9e3ce06477dfd07

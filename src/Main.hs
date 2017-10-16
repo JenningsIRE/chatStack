@@ -7,6 +7,7 @@ import Control.Exception
 import Control.Concurrent
 import Control.Monad (when)
 import Control.Monad.Fix (fix)
+import Data.List
 
 main :: IO ()
 main = do
@@ -40,10 +41,18 @@ runConn (sock, addr) chan msgNum parentSock = do
     hdl <- socketToHandle sock ReadWriteMode
     hSetBuffering hdl NoBuffering
 
-    hPutStrLn hdl "Hi, what's your name?"
-    name <- fmap init (hGetLine hdl)
-    broadcast ("--> " ++ name ++ " entered chat.")
-    hPutStrLn hdl ("Welcome, " ++ name ++ "!")
+    hPutStrLn hdl "Welcome. Please send the following to join a chat room:"
+    hPutStrLn hdl "JOIN_CHATROOM: [chatroom name]\nCLIENT_IP: [IP Address of client if UDP | 0 if TCP]\nPORT: [port number of client if UDP | 0 if TCP]\nCLIENT_NAME: [string Handle to identifier client user]"
+    line <- fmap init (hGetLine hdl)
+    let Just room = stripPrefix "JOIN_CHATROOM: " line
+    line <- fmap init (hGetLine hdl)
+    let Just ip = stripPrefix "CLIENT_IP: " line
+    line <- fmap init (hGetLine hdl)
+    let Just port = stripPrefix "PORT: " line
+    line <- fmap init (hGetLine hdl)
+    let Just name = stripPrefix "CLIENT_NAME: " line
+
+    hPutStr hdl ("JOINED_CHATROOM: "++name++"\nCLIENT_IP: "++ip++"\nPORT: "++port++"\nROOM_REF: \nJOIN_ID: \n")
 
     commLine <- dupChan chan
 
