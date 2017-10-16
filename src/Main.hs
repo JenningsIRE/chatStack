@@ -61,7 +61,7 @@ runConn (sock, addr) chan joinId parentSock = do
 
     handle (\(SomeException _) -> return ()) $ fix $ \loop -> do
         line <- fmap init (hGetLine hdl)
-        let msg = line : msg
+        let msg = msg ++ [line]
         case line of
              -- If an exception is caught, send a message and break the loop
              "quit" -> hPutStrLn hdl "Bye!"
@@ -74,6 +74,8 @@ runConn (sock, addr) chan joinId parentSock = do
 
              -- else, continue looping.
              _      -> loop
+
+
 
     killThread reader                      -- kill after the loop ends
     --broadcast ("<-- " ++ name ++ " left.") -- make a final broadcast
@@ -94,9 +96,9 @@ inputParser hdl line rooms= do
   --when (room `elem` rooms) --fails
 
 outputParser :: [String] -> Chan Msg -> Int -> IO()
-outputParser msg chan joinId = do
+outputParser line chan joinId = do
   let broadcast msg = writeChan chan (joinId, msg)
-  let a = unlines msg
+  let a = unlines line
   broadcast(a)
 
   return ()

@@ -1,10 +1,10 @@
 
 ==================== FINAL INTERFACE ====================
-2017-10-16 18:28:05.741477 UTC
+2017-10-16 18:55:17.30879 UTC
 
 interface main@main:Main 8002
-  interface hash: c826cb1398eccd4403bbbc1e829bf732
-  ABI hash: 72af5556c1ea34a5af7a4f297ffbc5dc
+  interface hash: 5f2e4fb99c4d19d952568143a3c1053e
+  ABI hash: f2ba25a3fd748bb3acbb87e2ed531273
   export-list hash: f20794f9edbb42b5fda0040855241f36
   orphan hash: 693e9af84d3dfcc71e640e005bdc5e2e
   flag hash: 4620c20d1a77ef0095cb09035e49e8bd
@@ -233,7 +233,7 @@ c57d69f4025b524c4c783b18a63553f5
                  case w of ww { Network.Socket.Types.MkSocket ww1 ww2 ww3 ww4 ww5 ->
                  case ww5 of ww6 { GHC.MVar.MVar ww7 ->
                  Main.$wmainLoop ww1 ww2 ww3 ww4 ww7 w1 w2 w3 } }) -}
-92c717a4f91f48dbf97cb2bf917f9e7f
+120beafdab5264a89b4064f42caba5ba
   outputParser ::
     [GHC.Base.String]
     -> Control.Concurrent.Chan.Chan Main.Msg
@@ -248,7 +248,7 @@ c57d69f4025b524c4c783b18a63553f5
                  ->_R <Control.Concurrent.Chan.Chan Main.Msg>_R
                  ->_R <GHC.Types.Int>_R
                  ->_R Sym (GHC.Types.N:IO[0] <()>_R)) -}
-345cdcddaca58c5cf17e8db4c08f9df5
+72fd6d4699994057f55918043e6513fd
   outputParser1 ::
     [GHC.Base.String]
     -> Control.Concurrent.Chan.Chan Main.Msg
@@ -258,7 +258,7 @@ c57d69f4025b524c4c783b18a63553f5
   {- Arity: 4, HasNoCafRefs,
      Strictness: <L,1*U><S(SS),1*U(1*U,U)><L,U><S,U>,
      Unfolding: InlineRule (4, True, False)
-                (\ (msg :: [GHC.Base.String])
+                (\ (line :: [GHC.Base.String])
                    (chan :: Control.Concurrent.Chan.Chan Main.Msg)
                    (joinId :: GHC.Types.Int)
                    (s :: GHC.Prim.State# GHC.Prim.RealWorld)[OneShot] ->
@@ -267,7 +267,7 @@ c57d69f4025b524c4c783b18a63553f5
                         @ Main.Msg
                         ww1
                         ww2
-                        (joinId, Data.OldList.unlines msg)
+                        (joinId, Data.OldList.unlines line)
                         s of ds1 { (#,#) ipv ipv1 ->
                  (# ipv, GHC.Tuple.() #) } }) -}
 4ca90e68a65ae3b29d44ed996572a0ef
