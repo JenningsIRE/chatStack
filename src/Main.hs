@@ -80,7 +80,7 @@ runConn (sock, addr) chan joinId parentSock = do
     --broadcast ("<-- " ++ name ++ " left.") -- make a final broadcast
     hClose hdl                             -- close the handle
 
-getUserLines :: Handle -> IO String                      
+getUserLines :: Handle -> IO String
 getUserLines hdl = go hdl ""
 
 go :: Handle -> String -> IO String
@@ -107,7 +107,16 @@ inputParser :: Handle -> String -> [String]-> IO()
 inputParser hdl line rooms= do
   let msg = lines line
   let Just room = stripPrefix "CHAT: " (msg !! 0)
-  if (True)---room `elem` rooms)
+  let
+  let room = if stripPrefix "JOINED_CHATROOM: " (msg !! 0) /= Nothing
+              then Just (stripPrefix "JOINED_CHATROOM: " (msg !! 0))
+              else if stripPrefix "LEFT_CHATROOM: " (msg !! 0) /= Nothing
+                then Just (stripPrefix "LEFT_CHATROOM: " (msg !! 0))
+                else if stripPrefix "CHAT: " (msg !! 0) /= Nothing
+                  then Just (stripPrefix "CHAT: " (msg !! 0))
+                  else Nothing
+
+  if (room /=  Nothing)---room `elem` rooms)
   then hPutStrLn hdl (line)
   else return()
   --when (room `elem` rooms) --fails
@@ -115,12 +124,37 @@ inputParser hdl line rooms= do
 outputParser :: String -> Chan Msg -> Int -> IO()
 outputParser a chan joinId = do
   let broadcast msg = writeChan chan (joinId, msg)
-  --let a = unlines line
+  if stripPrefix "JOIN_CHATROOM: " a /= Nothing
+   then joinChatroom stripPrefix "JOIN_CHATROOM: " a
+   else if stripPrefix "LEAVE_CHATROOM: " a == Just restOfString
+    then leaveChatroom restOfString
+    else if stripPrefix "DISCONNECT: " a == Just restOfString
+        then disconnect restOfString
+        else if stripPrefix "CHAT: " a == Just restOfString
+                then chat restOfString
+                else return ()
+
   broadcast(a)
 
   return ()
 
+joinChatroom :: String -> IO()
+joinChatroom a = do
+  let l = lines a
+  let room = l !! 0
+  let ip = if (stripPrefix "CLIENT_IP: " (l !! 1) == Just x)
+            then Just x
+            else Nothing
 
+  let port = if stripPrefix "CLIENT_IP: " l !! 1 == Just restOfString
+              then restOfString
+              else return()
+
+  let name = if stripPrefix "CLIENT_IP: " l !! 1 == Just restOfString
+              then restOfString
+              else return()
+
+  return ()
 
 --line <- fmap init (hGetLine hdl)
 --    let Just room = stripPrefix "JOIN_CHATROOM: " line
