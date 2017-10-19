@@ -8,6 +8,7 @@ import Control.Concurrent
 import Control.Monad (when)
 import Control.Monad.Fix (fix)
 import Data.List
+import Data.Maybe
 
 main :: IO ()
 main = do
@@ -43,12 +44,8 @@ runConn (sock, addr) chan joinId parentSock = do
     hdl <- socketToHandle sock ReadWriteMode
     hSetBuffering hdl NoBuffering
 
-    let rooms = "":rooms --hacky
+    let rooms = "general":rooms --hacky
     hPutStrLn hdl "You are now connected to the server"
-    --hPutStrLn hdl "JOIN_CHATROOM: [chatroom name]\nCLIENT_IP: [IP Address of client if UDP | 0 if TCP]\nPORT: [port number of client if UDP | 0 if TCP]\nCLIENT_NAME: [string Handle to identifier client user]"
-    name <- fmap init (hGetLine hdl)
-
-
     commLine <- dupChan chan
 
     -- fork off a thread for reading from the duplicated channel
@@ -61,8 +58,6 @@ runConn (sock, addr) chan joinId parentSock = do
 
     handle (\(SomeException _) -> return ()) ( fix ( \loop -> do
         line <- getUserLines hdl
-        let msg = ["this", "is", "a", "test"]
-        let a = unlines msg
         case line of
              -- If an exception is caught, send a message and break the loop
              "quit" -> hPutStrLn hdl "Bye!"
@@ -74,10 +69,7 @@ runConn (sock, addr) chan joinId parentSock = do
              _      -> outputParser line chan joinId >> loop
         ))
 
-
-
     killThread reader                      -- kill after the loop ends
-    --broadcast ("<-- " ++ name ++ " left.") -- make a final broadcast
     hClose hdl                             -- close the handle
 
 getUserLines :: Handle -> IO String
@@ -106,65 +98,73 @@ heloText hdl addr = do
 inputParser :: Handle -> String -> [String]-> IO()
 inputParser hdl line rooms= do
   let msg = lines line
-  let Just room = stripPrefix "CHAT: " (msg !! 0)
-  let
-  let room = if stripPrefix "JOINED_CHATROOM: " (msg !! 0) /= Nothing
-              then Just (stripPrefix "JOINED_CHATROOM: " (msg !! 0))
-              else if stripPrefix "LEFT_CHATROOM: " (msg !! 0) /= Nothing
-                then Just (stripPrefix "LEFT_CHATROOM: " (msg !! 0))
-                else if stripPrefix "CHAT: " (msg !! 0) /= Nothing
-                  then Just (stripPrefix "CHAT: " (msg !! 0))
-                  else Nothing
+  let prefixes = words line
+  let room = case head prefixes of
 
-  if (room /=  Nothing)---room `elem` rooms)
-  then hPutStrLn hdl (line)
-  else return()
-  --when (room `elem` rooms) --fails
+              "JOINED_CHATROOM:" -> fromMaybe "" (stripPrefix "JOINED_CHATROOM: " (head msg))
+
+              "LEFT_CHATROOM:" -> fromMaybe "" (stripPrefix "JOINED_CHATROOM: " (head msg))
+
+              "CHAT:" -> fromMaybe "" (stripPrefix "JOINED_CHATROOM: " (head msg))
+
+              _ -> ""
+
+  when (room `elem` rooms) (hPutStrLn hdl line)
+  return ()
 
 outputParser :: String -> Chan Msg -> Int -> IO()
 outputParser a chan joinId = do
   let broadcast msg = writeChan chan (joinId, msg)
-  if stripPrefix "JOIN_CHATROOM: " a /= Nothing
-   then joinChatroom stripPrefix "JOIN_CHATROOM: " a
-   else if stripPrefix "LEAVE_CHATROOM: " a == Just restOfString
-    then leaveChatroom restOfString
-    else if stripPrefix "DISCONNECT: " a == Just restOfString
-        then disconnect restOfString
-        else if stripPrefix "CHAT: " a == Just restOfString
-                then chat restOfString
-                else return ()
-
-  broadcast(a)
+  let x = words a
+  if null x
+    then return ()
+    else case head x of
+       "JOIN_CHATROOM:" -> broadcast(concat (joinChatroom a))
+       "LEAVE_CHATROOM:" -> broadcast(concat (leaveChatroom a))
+       "CHAT:" -> broadcast(concat (chat a))
+       --"DISCONNECT:" -> disconnect a)
+       _ -> return ()
 
   return ()
 
-joinChatroom :: String -> IO()
+joinChatroom :: String -> [String]
 joinChatroom a = do
   let l = lines a
-  let room = l !! 0
-  let ip = if (stripPrefix "CLIENT_IP: " (l !! 1) == Just x)
-            then Just x
-            else Nothing
+  if length l >= 4
+  then do
+    let room = fromMaybe "" (stripPrefix "JOIN_CHATROOM: " (head l))
+    let ip = fromMaybe "" (stripPrefix "CLIENT_IP: " (l !! 1))
+    let port = fromMaybe "" (stripPrefix "PORT: " (l !! 2))
+    let name = fromMaybe "" (stripPrefix "CLIENT_NAME: " (l !! 3))
 
-  let port = if stripPrefix "CLIENT_IP: " l !! 1 == Just restOfString
-              then restOfString
-              else return()
+    return ("JOINED_CHATROOM: "++room ++"\nCLIENT_IP: "++ip++"\nPORT: "++port++"\nROOM_REF: \nJOIN_ID: \n")
 
-  let name = if stripPrefix "CLIENT_IP: " l !! 1 == Just restOfString
-              then restOfString
-              else return()
+  else return "ERROR"
 
-  return ()
+leaveChatroom :: String -> [String]
+leaveChatroom a = do
+  let l = lines a
+  if length l >= 4
+  then do
+    let room = fromMaybe "" (stripPrefix "LEAVE_CHATROOM: " (head l))
+    let id = fromMaybe "" (stripPrefix "JOIN_ID: " (l !! 1))
+    let name = fromMaybe "" (stripPrefix "CLIENT_NAME: " (l !! 2))
 
---line <- fmap init (hGetLine hdl)
---    let Just room = stripPrefix "JOIN_CHATROOM: " line
---    let rooms = room:rooms
---    line <- fmap init (hGetLine hdl)
---    let Just ip = stripPrefix "CLIENT_IP: " line
---    line <- fmap init (hGetLine hdl)
---    let Just port = stripPrefix "PORT: " line
---    line <- fmap init (hGetLine hdl)
---    let Just name = stripPrefix "CLIENT_NAME: " line
+    return ("LEFT_CHATROOM: "++room ++"\nJOIN_ID: " ++ name)
 
---    hPutStr hdl ("JOINED_CHATROOM: "++rooms !! 0++"\nCLIENT_IP: "++ip++"\nPORT: "++port++"\nROOM_REF: \nJOIN_ID: \n")
+  else return "ERROR"
+
+chat :: String -> [String]
+chat a = do
+  let l = lines a
+  if length l >= 4
+  then do
+    let room = fromMaybe "" (stripPrefix "CHAT: " (head l))
+    let id = fromMaybe "" (stripPrefix "JOIN_ID: " (l !! 1))
+    let name = fromMaybe "" (stripPrefix "CLIENT_NAME: " (l !! 2))
+    let message = fromMaybe "" (stripPrefix "MESSAGE: " (unlines(drop 3 l)))
+
+    return ("CHAT: "++room ++"\nCLIENT_NAME: "++name++"\nMESSAGE: "++message)
+
+  else return "ERROR"
 
