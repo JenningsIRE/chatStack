@@ -7,6 +7,13 @@
   (major1) == 0 && (major2) <  1 || \
   (major1) == 0 && (major2) == 1 && (minor) <= 0)
 
+/* package async-2.1.1.1 */
+#define VERSION_async "2.1.1.1"
+#define MIN_VERSION_async(major1,major2,minor) (\
+  (major1) <  2 || \
+  (major1) == 2 && (major2) <  1 || \
+  (major1) == 2 && (major2) == 1 && (minor) <= 1)
+
 /* package base-4.9.1.0 */
 #define VERSION_base "4.9.1.0"
 #define MIN_VERSION_base(major1,major2,minor) (\
@@ -14,12 +21,26 @@
   (major1) == 4 && (major2) <  9 || \
   (major1) == 4 && (major2) == 9 && (minor) <= 1)
 
+/* package containers-0.5.7.1 */
+#define VERSION_containers "0.5.7.1"
+#define MIN_VERSION_containers(major1,major2,minor) (\
+  (major1) <  0 || \
+  (major1) == 0 && (major2) <  5 || \
+  (major1) == 0 && (major2) == 5 && (minor) <= 7)
+
 /* package network-2.6.3.2 */
 #define VERSION_network "2.6.3.2"
 #define MIN_VERSION_network(major1,major2,minor) (\
   (major1) <  2 || \
   (major1) == 2 && (major2) <  6 || \
   (major1) == 2 && (major2) == 6 && (minor) <= 3)
+
+/* package stm-2.4.4.1 */
+#define VERSION_stm "2.4.4.1"
+#define MIN_VERSION_stm(major1,major2,minor) (\
+  (major1) <  2 || \
+  (major1) == 2 && (major2) <  4 || \
+  (major1) == 2 && (major2) == 4 && (minor) <= 4)
 
 /* tool cpphs-1.20.8 */
 #define TOOL_VERSION_cpphs "1.20.8"

@@ -1,170 +1,244 @@
+{-
+   Adapted from haskell-chat-sever-example which is
+      Copyright (c) 2012, Joseph Adams
+   Modifications (c) 2012, Simon Marlow
+-}
+
+{-# LANGUAGE RecordWildCards #-}
 module Main where
 
-import Network.Socket
-import System.IO
-import System.Environment
-import Control.Exception
+--import ConcurrentUtils
+
 import Control.Concurrent
-import Control.Monad (when)
-import Control.Monad.Fix (fix)
-import Data.List
-import Data.Maybe
+import Control.Concurrent.STM
+import Control.Concurrent.Async
+import qualified Data.Map as Map
+import Data.Map (Map)
+import System.IO
+import Control.Exception
+import Network
+import Control.Monad
+import Text.Printf
 
+{-
+Notes
+- protocol:
+    Server: "Name?"
+    Client: <string>
+    -- if <string> is already in use, ask for another name
+    -- Commands:
+    --   /tell <string> message...  (single-user tell)
+    --   /quit                      (exit)
+    --   /kick <string>             (kick another user)
+    --   message...                 (broadcast to all connected users)
+- a client needs to both listen for commands from the socket and
+  listen for activity from other clients.  Therefore we're going to
+  need at least two threads per client (for listening to multiple
+  things).  Easiest is to use STM for in-process communication, and to
+  have a receiving thread that listens on the socket and forwards to a
+  TChan.
+- Handle all errors properly, be async-exception safe
+- Consistency:
+  - if two clients simultaneously kick a third client, only one will be
+    successful
+See doc/lab-exercises.tex for some ideas for enhancements that you
+could try.
+-}
+
+-- <<main
 main :: IO ()
-main = do
-  sock <- socket AF_INET Stream 0
-  setSocketOption sock ReuseAddr 1
-  number <- getArgs
-  let portNumber = read (number !! 0) :: PortNumber
-  bind sock (SockAddrInet portNumber iNADDR_ANY)
-  putStrLn ("server open on port " ++ (number !! 0))
-  listen sock 2
-  chan <- newChan
+main = withSocketsDo $ do
+  server <- newServer
+  sock <- listenOn (PortNumber (fromIntegral port))
+  printf "Listening on port %d\n" port
+  forever $ do
+      (handle, host, port) <- accept sock
+      printf "Accepted connection from %s: %s\n" host (show port)
+      forkFinally (talk handle server) (\_ -> hClose handle)
 
-  --address memory leak
-  _ <- forkIO (fix ( \loop -> do
-    (_, _) <- readChan chan
-    loop))
-
-  mainLoop sock chan 0
-
-type Msg = (Int, String)
-
-mainLoop :: Socket -> Chan Msg -> Int -> IO ()
-mainLoop sock chan joinId = do
-  conn <- accept sock
-  forkIO (runConn conn chan joinId sock)
-
-  mainLoop sock chan $! joinId + 1
+port :: Int
+port = 44444
+-- >>
 
 
-runConn :: (Socket, SockAddr) -> Chan Msg -> Int -> Socket -> IO ()
-runConn (sock, addr) chan joinId parentSock = do
+-- ---------------------------------------------------------------------------
+-- Data structures and initialisation
 
-    hdl <- socketToHandle sock ReadWriteMode
-    hSetBuffering hdl NoBuffering
+-- <<Client
+type ClientName = String
 
-    let rooms = "general":rooms --hacky
-    hPutStrLn hdl "You are now connected to the server"
-    commLine <- dupChan chan
+data Client = Client
+  { clientName     :: ClientName
+  , clientHandle   :: Handle
+  , clientKicked   :: TVar (Maybe String)
+  , clientSendChan :: TChan Message
+  }
+-- >>
 
-    -- fork off a thread for reading from the duplicated channel
-    reader <- forkIO ( fix ( \loop -> do
-        (msgId, line) <- readChan commLine
-        if joinId /= msgId
-        then  forkIO(inputParser hdl line rooms) >> loop
-        else loop
-        ))
+-- <<newClient
+newClient :: ClientName -> Handle -> STM Client
+newClient name handle = do
+  c <- newTChan
+  k <- newTVar Nothing
+  return Client { clientName     = name
+                , clientHandle   = handle
+                , clientSendChan = c
+                , clientKicked   = k
+                }
+-- >>
 
-    handle (\(SomeException _) -> return ()) ( fix ( \loop -> do
-        line <- getUserLines hdl
-        case line of
-             -- If an exception is caught, send a message and break the loop
-             "quit" -> hPutStrLn hdl "Bye!"
+-- <<Server
+data Server = Server
+  { clients :: TVar (Map ClientName Client)
+  }
 
-             "KILL_SERVICE" -> close parentSock
+newServer :: IO Server
+newServer = do
+  c <- newTVarIO Map.empty
+  return Server { clients = c }
+-- >>
 
-             "HELO text" -> heloText hdl addr >> loop
+-- <<Message
+data Message = Notice String
+             | Tell ClientName String
+             | Broadcast ClientName String
+             | Command String
+-- >>
 
-             _      -> outputParser line chan joinId >> loop
-        ))
+-- -----------------------------------------------------------------------------
+-- Basic operations
 
-    killThread reader                      -- kill after the loop ends
-    hClose hdl                             -- close the handle
+-- <<broadcast
+broadcast :: Server -> Message -> STM ()
+broadcast Server{..} msg = do
+  clientmap <- readTVar clients
+  mapM_ (\client -> sendMessage client msg) (Map.elems clientmap)
+-- >>
 
-getUserLines :: Handle -> IO String
-getUserLines hdl = go hdl ""
+-- <<sendMessage
+sendMessage :: Client -> Message -> STM ()
+sendMessage Client{..} msg =
+  writeTChan clientSendChan msg
+-- >>
 
-go :: Handle -> String -> IO String
-go hdl contents = do
-  line <- fmap init(hGetLine hdl)
-  case line of
-               "quit" -> return "quit"
+-- <<sendToName
+sendToName :: Server -> ClientName -> Message -> STM Bool
+sendToName server@Server{..} name msg = do
+  clientmap <- readTVar clients
+  case Map.lookup name clientmap of
+    Nothing     -> return False
+    Just client -> sendMessage client msg >> return True
+-- >>
 
-               "KILL_SERVICE" -> return "KILL_SERVICE"
+tell :: Server -> Client -> ClientName -> String -> IO ()
+tell server@Server{..} Client{..} who msg = do
+  ok <- atomically $ sendToName server who (Tell clientName msg)
+  if ok
+     then return ()
+     else hPutStrLn clientHandle (who ++ " is not connected.")
 
-               "HELO text" -> return "HELO text"
+kick :: Server -> ClientName -> ClientName -> STM ()
+kick server@Server{..} who by = do
+  clientmap <- readTVar clients
+  case Map.lookup who clientmap of
+    Nothing ->
+      void $ sendToName server by (Notice $ who ++ " is not connected")
+    Just victim -> do
+      writeTVar (clientKicked victim) $ Just ("by " ++ by)
+      void $ sendToName server by (Notice $ "you kicked " ++ who)
 
-               "" -> return contents
+-- -----------------------------------------------------------------------------
+-- The main server
 
-               _      -> go hdl (contents ++ line ++ "\n")
+talk :: Handle -> Server -> IO ()
+talk handle server@Server{..} = do
+  hSetNewlineMode handle universalNewlineMode
+      -- Swallow carriage returns sent by telnet clients
+  hSetBuffering handle LineBuffering
+  readName
+ where
+-- <<readName
+  readName = do
+    hPutStrLn handle "What is your name?"
+    name <- hGetLine handle
+    if null name
+      then readName
+      else mask $ \restore -> do        -- <1>
+             ok <- checkAddClient server name handle
+             case ok of
+               Nothing -> restore $ do  -- <2>
+                  hPrintf handle
+                     "The name %s is in use, please choose another\n" name
+                  readName
+               Just client ->
+                  restore (runClient server client) -- <3>
+                      `finally` removeClient server name
+-- >>
 
+-- <<checkAddClient
+checkAddClient :: Server -> ClientName -> Handle -> IO (Maybe Client)
+checkAddClient server@Server{..} name handle = atomically $ do
+  clientmap <- readTVar clients
+  if Map.member name clientmap
+    then return Nothing
+    else do client <- newClient name handle
+            writeTVar clients $ Map.insert name client clientmap
+            broadcast server  $ Notice (name ++ " has connected")
+            return (Just client)
+-- >>
 
-heloText :: Handle -> SockAddr -> IO()
-heloText hdl addr = do
-  (Just hostName, Just serviceName) <- getNameInfo [] True True addr
-  hPutStr hdl ("HELO text\nIP:"++hostName++"\nPort:"++serviceName++"\nStudentID:13326255\n")
+-- <<removeClient
+removeClient :: Server -> ClientName -> IO ()
+removeClient server@Server{..} name = atomically $ do
+  modifyTVar' clients $ Map.delete name
+  broadcast server $ Notice (name ++ " has disconnected")
+-- >>
 
-inputParser :: Handle -> String -> [String]-> IO()
-inputParser hdl line rooms= do
-  let msg = lines line
-  let prefixes = words line
-  let room = case head prefixes of
-
-              "JOINED_CHATROOM:" -> fromMaybe "" (stripPrefix "JOINED_CHATROOM: " (head msg))
-
-              "LEFT_CHATROOM:" -> fromMaybe "" (stripPrefix "JOINED_CHATROOM: " (head msg))
-
-              "CHAT:" -> fromMaybe "" (stripPrefix "JOINED_CHATROOM: " (head msg))
-
-              _ -> ""
-
-  when (room `elem` rooms) (hPutStrLn hdl line)
+-- <<runClient
+runClient :: Server -> Client -> IO ()
+runClient serv@Server{..} client@Client{..} = do
+  race server receive
   return ()
+ where
+  receive = forever $ do
+    msg <- hGetLine clientHandle
+    atomically $ sendMessage client (Command msg)
 
-outputParser :: String -> Chan Msg -> Int -> IO()
-outputParser a chan joinId = do
-  let broadcast msg = writeChan chan (joinId, msg)
-  let x = words a
-  if null x
-    then return ()
-    else case head x of
-       "JOIN_CHATROOM:" -> broadcast(concat (joinChatroom a))
-       "LEAVE_CHATROOM:" -> broadcast(concat (leaveChatroom a))
-       "CHAT:" -> broadcast(concat (chat a))
-       --"DISCONNECT:" -> disconnect a)
-       _ -> return ()
+  server = join $ atomically $ do
+    k <- readTVar clientKicked
+    case k of
+      Just reason -> return $
+        hPutStrLn clientHandle $ "You have been kicked: " ++ reason
+      Nothing -> do
+        msg <- readTChan clientSendChan
+        return $ do
+            continue <- handleMessage serv client msg
+            when continue $ server
+-- >>
 
-  return ()
-
-joinChatroom :: String -> [String]
-joinChatroom a = do
-  let l = lines a
-  if length l >= 4
-  then do
-    let room = fromMaybe "" (stripPrefix "JOIN_CHATROOM: " (head l))
-    let ip = fromMaybe "" (stripPrefix "CLIENT_IP: " (l !! 1))
-    let port = fromMaybe "" (stripPrefix "PORT: " (l !! 2))
-    let name = fromMaybe "" (stripPrefix "CLIENT_NAME: " (l !! 3))
-
-    return ("JOINED_CHATROOM: "++room ++"\nCLIENT_IP: "++ip++"\nPORT: "++port++"\nROOM_REF: \nJOIN_ID: \n")
-
-  else return "ERROR"
-
-leaveChatroom :: String -> [String]
-leaveChatroom a = do
-  let l = lines a
-  if length l >= 4
-  then do
-    let room = fromMaybe "" (stripPrefix "LEAVE_CHATROOM: " (head l))
-    let id = fromMaybe "" (stripPrefix "JOIN_ID: " (l !! 1))
-    let name = fromMaybe "" (stripPrefix "CLIENT_NAME: " (l !! 2))
-
-    return ("LEFT_CHATROOM: "++room ++"\nJOIN_ID: " ++ name)
-
-  else return "ERROR"
-
-chat :: String -> [String]
-chat a = do
-  let l = lines a
-  if length l >= 4
-  then do
-    let room = fromMaybe "" (stripPrefix "CHAT: " (head l))
-    let id = fromMaybe "" (stripPrefix "JOIN_ID: " (l !! 1))
-    let name = fromMaybe "" (stripPrefix "CLIENT_NAME: " (l !! 2))
-    let message = fromMaybe "" (stripPrefix "MESSAGE: " (unlines(drop 3 l)))
-
-    return ("CHAT: "++room ++"\nCLIENT_NAME: "++name++"\nMESSAGE: "++message)
-
-  else return "ERROR"
-
+-- <<handleMessage
+handleMessage :: Server -> Client -> Message -> IO Bool
+handleMessage server client@Client{..} message =
+  case message of
+     Notice msg         -> output $ "*** " ++ msg
+     Tell name msg      -> output $ "*" ++ name ++ "*: " ++ msg
+     Broadcast name msg -> output $ "<" ++ name ++ ">: " ++ msg
+     Command msg ->
+       case words msg of
+           ["/kick", who] -> do
+               atomically $ kick server who clientName
+               return True
+           "/tell" : who : what -> do
+               tell server client who (unwords what)
+               return True
+           ["/quit"] ->
+               return False
+           ('/':_):_ -> do
+               hPutStrLn clientHandle $ "Unrecognised command: " ++ msg
+               return True
+           _ -> do
+               atomically $ broadcast server $ Broadcast clientName msg
+               return True
+ where
+   output s = do hPutStrLn clientHandle s; return True
+-- >>
