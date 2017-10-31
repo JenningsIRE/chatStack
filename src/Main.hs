@@ -54,7 +54,7 @@ main = withSocketsDo $ do
   forever $ do
       (handle, host, port) <- accept sock
       printf "Accepted connection from %s: %s\n" host (show port)
-      forkFinally (talk handle server) (\_ -> hClose handle)
+      forkFinally (talk host port handle server) (\_ -> hClose handle)
 
 port :: Int
 port = 44444
@@ -69,6 +69,8 @@ type ClientName = String
 
 data Client = Client
   { clientName     :: ClientName
+  , clientIP       :: String
+  , clientPort     :: PortNumber
   , clientHandle   :: Handle
   , clientKicked   :: TVar (Maybe String)
   , clientSendChan :: TChan Message
@@ -76,11 +78,13 @@ data Client = Client
 -- >>
 
 -- <<newClient
-newClient :: ClientName -> Handle -> STM Client
-newClient name handle = do
+newClient :: ClientName -> String -> PortNumber -> Handle -> STM Client
+newClient name host port handle = do
   c <- newTChan
   k <- newTVar Nothing
   return Client { clientName     = name
+                , clientIP       = host
+                , clientPort     = port
                 , clientHandle   = handle
                 , clientSendChan = c
                 , clientKicked   = k
@@ -137,6 +141,13 @@ tell server@Server{..} Client{..} who msg = do
      then return ()
      else hPutStrLn clientHandle (who ++ " is not connected.")
 
+heloText :: Server -> Client -> ClientName  -> IO ()
+heloText server@Server{..} Client{..} who  = do
+  ok <- atomically $ sendToName server who (Tell clientName ("HELO text\nIP:"++clientIP++"\nPort:"++"\nStudentID:13326255\n"))
+  if ok
+     then return ()
+     else hPutStrLn clientHandle (who ++ " is not connected.")
+
 kick :: Server -> ClientName -> ClientName -> STM ()
 kick server@Server{..} who by = do
   clientmap <- readTVar clients
@@ -150,8 +161,8 @@ kick server@Server{..} who by = do
 -- -----------------------------------------------------------------------------
 -- The main server
 
-talk :: Handle -> Server -> IO ()
-talk handle server@Server{..} = do
+talk :: String -> PortNumber -> Handle -> Server -> IO ()
+talk host port handle server@Server{..} = do
   hSetNewlineMode handle universalNewlineMode
       -- Swallow carriage returns sent by telnet clients
   hSetBuffering handle LineBuffering
@@ -164,7 +175,7 @@ talk handle server@Server{..} = do
     if null name
       then readName
       else mask $ \restore -> do        -- <1>
-             ok <- checkAddClient server name handle
+             ok <- checkAddClient server name host port handle
              case ok of
                Nothing -> restore $ do  -- <2>
                   hPrintf handle
@@ -176,12 +187,12 @@ talk handle server@Server{..} = do
 -- >>
 
 -- <<checkAddClient
-checkAddClient :: Server -> ClientName -> Handle -> IO (Maybe Client)
-checkAddClient server@Server{..} name handle = atomically $ do
+checkAddClient :: Server -> ClientName -> String -> PortNumber -> Handle -> IO (Maybe Client)
+checkAddClient server@Server{..} name host port handle = atomically $ do
   clientmap <- readTVar clients
   if Map.member name clientmap
     then return Nothing
-    else do client <- newClient name handle
+    else do client <- newClient name host port handle
             writeTVar clients $ Map.insert name client clientmap
             broadcast server  $ Notice (name ++ " has connected")
             return (Just client)
@@ -225,13 +236,16 @@ handleMessage server client@Client{..} message =
      Broadcast name msg -> output $ "<" ++ name ++ ">: " ++ msg
      Command msg ->
        case words msg of
-           ["/kick", who] -> do
-               atomically $ kick server who clientName
-               return True
+           --["KILL_SERVICE"] -> do
+             --  atomically $ killService server client
+               --return False
+           ["HELO"] -> do
+                          heloText server client clientName
+                          return False
            "/tell" : who : what -> do
                tell server client who (unwords what)
                return True
-           ["/quit"] ->
+           ["quit"] ->
                return False
            ('/':_):_ -> do
                hPutStrLn clientHandle $ "Unrecognised command: " ++ msg
