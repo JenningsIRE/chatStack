@@ -15,6 +15,7 @@ import Control.Concurrent.Async
 import qualified Data.Map as Map
 import Data.Map (Map)
 import System.IO
+import System.Environment
 import Control.Exception
 import Network
 import Control.Monad
@@ -49,16 +50,10 @@ could try.
 main :: IO ()
 main = withSocketsDo $ do
   server <- newServer
-  sock <- listenOn (PortNumber (fromIntegral port))
-  printf "Listening on port %d\n" port
+  port <- getArgs
+  sock <- listenOn (PortNumber (fromIntegral (read (head port))))
+  printf "Listening on port %s\n" (head port)
   mainLoop server sock  0
-
-port :: Int
-port = 44444
--- >>
-
-
-
 
 mainLoop :: Server -> Socket -> Int -> IO ()
 mainLoop server sock joinId = do
@@ -124,10 +119,10 @@ data Message = Notice String
 -- Basic operations
 
 -- <<broadcast
-broadcast :: Server -> Message -> STM ()
-broadcast Server{..} msg = do
+broadcast :: Server -> Int -> Message -> STM ()
+broadcast Server{..} roomRef msg = do
   clientmap <- readTVar clients
-  mapM_ (\client -> sendMessage client msg) (Map.elems clientmap)
+  mapM_ (\client -> when (roomRef `elem` clientRoomRefs client)  (sendMessage client msg)) (Map.elems clientmap)
 -- >>
 
 -- <<sendMessage
@@ -167,40 +162,26 @@ talk host port handle server@Server{..} joinId = do
   hSetNewlineMode handle universalNewlineMode
       -- Swallow carriage returns sent by telnet clients
   hSetBuffering handle LineBuffering
-  readName
- where
--- <<readName
-  readName = do
-    name <- hGetLine handle
-    if null name
-      then readName
-      else mask $ \restore -> do        -- <1>
-             ok <- checkAddRoom server joinId host port handle
-             case ok of
-               Nothing -> restore $ do  -- <2>
-                  hPrintf handle
-                     "The name %s is in use, please choose another\n" (show joinId)
-                  readName
-               Just client ->
-                  restore (runClient server client) -- <3>
-                      `finally` removeClient server joinId
+  client <- checkAddRoom server joinId host port handle
+  runClient server client -- <3>
+      `finally` removeClient server joinId
 -- >>
 
 -- <<checkAddClient
-checkAddRoom :: Server -> Int -> String -> PortNumber -> Handle -> IO (Maybe Client)
+checkAddRoom :: Server -> Int -> String -> PortNumber -> Handle -> IO Client
 checkAddRoom server@Server{..} id host port handle = atomically $ do
   clientmap <- readTVar clients
   client <- newClient id host port handle
   writeTVar clients $ Map.insert id client clientmap
-  broadcast server  $ Notice ((show id) ++ " has connected")
-  return (Just client)
+  broadcast server 0 $ Notice ((show id) ++ " has connected")
+  return client
 -- >>
 
 -- <<removeClient
 removeClient :: Server -> Int -> IO ()
 removeClient server@Server{..} id = atomically $ do
   modifyTVar' clients $ Map.delete id
-  broadcast server $ Notice ((show id) ++ " has disconnected")
+  broadcast server 0 $ Notice ((show id) ++ " has disconnected")
 -- >>
 
 -- <<runClient
@@ -244,7 +225,7 @@ handleMessage server client@Client{..} message =
                hPutStrLn clientHandle $ "Unrecognised command: " ++ msg
                return True
            _ -> do
-               atomically $ broadcast server $ Broadcast clientId msg
+               atomically $ broadcast server 0 $ Broadcast clientId msg
                return True
  where
    output s = do hPutStrLn clientHandle s; return True
