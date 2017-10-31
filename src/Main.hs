@@ -19,6 +19,7 @@ main = do
   bind sock (SockAddrInet portNumber iNADDR_ANY)
   putStrLn ("server open on port " ++ (head number))
   listen sock 2
+  forkIO(serviceMessages sock portNumber iNADDR_ANY)
   chan <- newChan
 
   --address memory leak
@@ -27,6 +28,15 @@ main = do
     loop))
 
   mainLoop sock chan 0
+
+serviceMessages :: Socket -> PortNumber -> HostAddress -> IO ()
+serviceMessages sock port host = do
+  line <- getLine
+  case line of
+     "KILL_SERVICE" -> close sock
+     "HELO text" -> heloText port host
+
+  serviceMessages sock port host
 
 type Msg = (Int, String)
 
@@ -59,13 +69,6 @@ runConn (sock, addr) chan joinId parentSock = do
     handle (\(SomeException _) -> return ()) ( fix ( \loop -> do
         line <- getUserLines hdl
         case line of
-             -- If an exception is caught, send a message and break the loop
-             "quit" -> hPutStrLn hdl "Bye!"
-
-             "KILL_SERVICE" -> close parentSock
-
-             "HELO text" -> heloText hdl addr >> loop
-
              _      -> outputParser line chan joinId >> loop
         ))
 
@@ -79,21 +82,15 @@ go :: Handle -> String -> IO String
 go hdl contents = do
   line <- fmap init(hGetLine hdl)
   case line of
-               "quit" -> return "quit"
-
-               "KILL_SERVICE" -> return "KILL_SERVICE"
-
-               "HELO text" -> return "HELO text"
 
                "" -> return contents
 
                _      -> go hdl (contents ++ line ++ "\n")
 
 
-heloText :: Handle -> SockAddr -> IO()
-heloText hdl addr = do
-  (Just hostName, Just serviceName) <- getNameInfo [] True True addr
-  hPutStr hdl ("HELO text\nIP:"++hostName++"\nPort:"++serviceName++"\nStudentID:13326255\n")
+heloText :: PortNumber -> HostAddress -> IO()
+heloText  port host = do
+  putStr ("HELO text\nIP:"++(show host)++"\nPort:"++(show port)++"\nStudentID:13326255\n")
 
 inputParser :: Handle -> String -> [String]-> IO()
 inputParser hdl line rooms= do
