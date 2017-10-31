@@ -16,10 +16,11 @@ main = do
   setSocketOption sock ReuseAddr 1
   number <- getArgs
   let portNumber = read (head number) :: PortNumber
-  bind sock (SockAddrInet portNumber iNADDR_ANY)
+  let addr = SockAddrInet portNumber iNADDR_ANY
+  bind sock (addr)
   putStrLn ("server open on port " ++ (head number))
   listen sock 2
-  forkIO(serviceMessages sock portNumber iNADDR_ANY)
+  forkIO(serviceMessages sock addr)
   chan <- newChan
 
   --address memory leak
@@ -29,14 +30,15 @@ main = do
 
   mainLoop sock chan 0
 
-serviceMessages :: Socket -> PortNumber -> HostAddress -> IO ()
-serviceMessages sock port host = do
+serviceMessages :: Socket -> SockAddr -> IO ()
+serviceMessages sock addr = do
   line <- getLine
   case line of
      "KILL_SERVICE" -> close sock
-     "HELO text" -> heloText port host
+     "HELO text" -> heloText addr
+     _ -> serviceMessages sock addr
 
-  serviceMessages sock port host
+  serviceMessages sock addr
 
 type Msg = (Int, String)
 
@@ -54,7 +56,7 @@ runConn (sock, addr) chan joinId parentSock = do
     hdl <- socketToHandle sock ReadWriteMode
     hSetBuffering hdl NoBuffering
 
-    let rooms = "general":rooms --hacky
+    let rooms = "test":rooms --hacky
     hPutStrLn hdl "You are now connected to the server"
     commLine <- dupChan chan
 
@@ -62,14 +64,13 @@ runConn (sock, addr) chan joinId parentSock = do
     reader <- forkIO ( fix ( \loop -> do
         (msgId, line) <- readChan commLine
         if joinId /= msgId
-        then  forkIO(inputParser hdl line rooms) >> loop
+        then  inputParser hdl line rooms >> loop
         else loop
         ))
 
     handle (\(SomeException _) -> return ()) ( fix ( \loop -> do
         line <- getUserLines hdl
-        case line of
-             _      -> outputParser line chan joinId >> loop
+        outputParser line chan joinId rooms >> loop
         ))
 
     killThread reader                      -- kill after the loop ends
@@ -88,9 +89,11 @@ go hdl contents = do
                _      -> go hdl (contents ++ line ++ "\n")
 
 
-heloText :: PortNumber -> HostAddress -> IO()
-heloText  port host = do
-  putStr ("HELO text\nIP:"++(show host)++"\nPort:"++(show port)++"\nStudentID:13326255\n")
+heloText :: SockAddr -> IO()
+heloText  addr = do
+
+  (Just host, Just port) <- getNameInfo [] True True addr
+  putStr ("HELO text\nIP:"++host++"\nPort:"++port++"\nStudentID:13326255\n")
 
 inputParser :: Handle -> String -> [String]-> IO()
 inputParser hdl line rooms= do
@@ -109,14 +112,14 @@ inputParser hdl line rooms= do
   when (room `elem` rooms) (hPutStrLn hdl line)
   return ()
 
-outputParser :: String -> Chan Msg -> Int -> IO()
-outputParser a chan joinId = do
+outputParser :: String -> Chan Msg -> Int -> [String] -> IO()
+outputParser a chan joinId rooms = do
   let broadcast msg = writeChan chan (joinId, msg)
   let x = words a
   if null x
     then return ()
     else case head x of
-       "JOIN_CHATROOM:" -> broadcast(concat (joinChatroom a))
+       "JOIN_CHATROOM:" -> broadcast(concat (joinChatroom a joinId))
        "LEAVE_CHATROOM:" -> broadcast(concat (leaveChatroom a))
        "CHAT:" -> broadcast(concat (chat a))
        --"DISCONNECT:" -> disconnect a)
@@ -124,8 +127,8 @@ outputParser a chan joinId = do
 
   return ()
 
-joinChatroom :: String -> [String]
-joinChatroom a = do
+joinChatroom :: String -> Int-> [String]
+joinChatroom a joinId= do
   let l = lines a
   if length l >= 4
   then do
@@ -134,12 +137,12 @@ joinChatroom a = do
     let port = fromMaybe "" (stripPrefix "PORT: " (l !! 2))
     let name = fromMaybe "" (stripPrefix "CLIENT_NAME: " (l !! 3))
 
-    return ("JOINED_CHATROOM: "++room ++"\nCLIENT_IP: "++ip++"\nPORT: "++port++"\nROOM_REF: \nJOIN_ID: \n")
+    return ("JOINED_CHATROOM: "++room ++"\nCLIENT_IP: "++ip++"\nPORT: "++port++"\nROOM_REF: \nJOIN_ID:" ++ show(joinId) ++ "\n")
 
-  else return "ERROR"
+  else return ""
 
-leaveChatroom :: String -> [String]
-leaveChatroom a = do
+leaveChatroom :: String -> Int -> [String]
+leaveChatroom a joinId= do
   let l = lines a
   if length l >= 4
   then do
@@ -147,9 +150,9 @@ leaveChatroom a = do
     let id = fromMaybe "" (stripPrefix "JOIN_ID: " (l !! 1))
     let name = fromMaybe "" (stripPrefix "CLIENT_NAME: " (l !! 2))
 
-    return ("LEFT_CHATROOM: "++room ++"\nJOIN_ID: " ++ name)
+    return ("LEFT_CHATROOM: "++room ++"\nJOIN_ID: " ++ show(joinId))
 
-  else return "ERROR"
+  else return ""
 
 chat :: String -> [String]
 chat a = do
@@ -163,5 +166,5 @@ chat a = do
 
     return ("CHAT: "++room ++"\nCLIENT_NAME: "++name++"\nMESSAGE: "++message)
 
-  else return "ERROR"
+  else return ""
 
