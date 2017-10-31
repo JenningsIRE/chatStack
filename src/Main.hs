@@ -15,9 +15,9 @@ main = do
   sock <- socket AF_INET Stream 0
   setSocketOption sock ReuseAddr 1
   number <- getArgs
-  let portNumber = read (number !! 0) :: PortNumber
+  let portNumber = read (head number) :: PortNumber
   bind sock (SockAddrInet portNumber iNADDR_ANY)
-  putStrLn ("server open on port " ++ (number !! 0))
+  putStrLn ("server open on port " ++ (head number))
   listen sock 2
   chan <- newChan
 
