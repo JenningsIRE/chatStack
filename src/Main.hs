@@ -54,7 +54,7 @@ main = withSocketsDo $ do
   forever $ do
       (handle, host, port) <- accept sock
       printf "Accepted connection from %s: %s\n" host (show port)
-      forkFinally (talk host port handle server) (\_ -> hClose handle)
+      forkFinally (talk handle server) (\_ -> hClose handle)
 
 port :: Int
 port = 44444
@@ -69,25 +69,19 @@ type ClientName = String
 
 data Client = Client
   { clientName     :: ClientName
-  , clientIP       :: String
-  , clientPort     :: PortNumber
   , clientHandle   :: Handle
-  , clientKicked   :: TVar (Maybe String)
   , clientSendChan :: TChan Message
   }
 -- >>
 
 -- <<newClient
-newClient :: ClientName -> String -> PortNumber -> Handle -> STM Client
-newClient name host port handle = do
+newClient :: ClientName -> Handle -> STM Client
+newClient name handle = do
   c <- newTChan
   k <- newTVar Nothing
   return Client { clientName     = name
-                , clientIP       = host
-                , clientPort     = port
                 , clientHandle   = handle
                 , clientSendChan = c
-                , clientKicked   = k
                 }
 -- >>
 
@@ -141,28 +135,11 @@ tell server@Server{..} Client{..} who msg = do
      then return ()
      else hPutStrLn clientHandle (who ++ " is not connected.")
 
-heloText :: Server -> Client -> ClientName  -> IO ()
-heloText server@Server{..} Client{..} who  = do
-  ok <- atomically $ sendToName server who (Tell clientName ("HELO text\nIP:"++clientIP++"\nPort:"++"\nStudentID:13326255\n"))
-  if ok
-     then return ()
-     else hPutStrLn clientHandle (who ++ " is not connected.")
-
-kick :: Server -> ClientName -> ClientName -> STM ()
-kick server@Server{..} who by = do
-  clientmap <- readTVar clients
-  case Map.lookup who clientmap of
-    Nothing ->
-      void $ sendToName server by (Notice $ who ++ " is not connected")
-    Just victim -> do
-      writeTVar (clientKicked victim) $ Just ("by " ++ by)
-      void $ sendToName server by (Notice $ "you kicked " ++ who)
-
 -- -----------------------------------------------------------------------------
 -- The main server
 
-talk :: String -> PortNumber -> Handle -> Server -> IO ()
-talk host port handle server@Server{..} = do
+talk :: Handle -> Server -> IO ()
+talk handle server@Server{..} = do
   hSetNewlineMode handle universalNewlineMode
       -- Swallow carriage returns sent by telnet clients
   hSetBuffering handle LineBuffering
@@ -175,7 +152,7 @@ talk host port handle server@Server{..} = do
     if null name
       then readName
       else mask $ \restore -> do        -- <1>
-             ok <- checkAddClient server name host port handle
+             ok <- checkAddClient server name handle
              case ok of
                Nothing -> restore $ do  -- <2>
                   hPrintf handle
@@ -187,12 +164,12 @@ talk host port handle server@Server{..} = do
 -- >>
 
 -- <<checkAddClient
-checkAddClient :: Server -> ClientName -> String -> PortNumber -> Handle -> IO (Maybe Client)
-checkAddClient server@Server{..} name host port handle = atomically $ do
+checkAddClient :: Server -> ClientName -> Handle -> IO (Maybe Client)
+checkAddClient server@Server{..} name handle = atomically $ do
   clientmap <- readTVar clients
   if Map.member name clientmap
     then return Nothing
-    else do client <- newClient name host port handle
+    else do client <- newClient name handle
             writeTVar clients $ Map.insert name client clientmap
             broadcast server  $ Notice (name ++ " has connected")
             return (Just client)
@@ -216,15 +193,10 @@ runClient serv@Server{..} client@Client{..} = do
     atomically $ sendMessage client (Command msg)
 
   server = join $ atomically $ do
-    k <- readTVar clientKicked
-    case k of
-      Just reason -> return $
-        hPutStrLn clientHandle $ "You have been kicked: " ++ reason
-      Nothing -> do
-        msg <- readTChan clientSendChan
-        return $ do
-            continue <- handleMessage serv client msg
-            when continue $ server
+      msg <- readTChan clientSendChan
+      return $ do
+          continue <- handleMessage serv client msg
+          when continue $ server
 -- >>
 
 -- <<handleMessage
@@ -236,12 +208,6 @@ handleMessage server client@Client{..} message =
      Broadcast name msg -> output $ "<" ++ name ++ ">: " ++ msg
      Command msg ->
        case words msg of
-           --["KILL_SERVICE"] -> do
-             --  atomically $ killService server client
-               --return False
-           ["HELO"] -> do
-                          heloText server client clientName
-                          return False
            "/tell" : who : what -> do
                tell server client who (unwords what)
                return True

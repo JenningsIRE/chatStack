@@ -2,16 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="e638ffb4-bed6-4269-994c-e9907471a3b5" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/stackChat/stackChat" afterPath="$PROJECT_DIR$/.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/stackChat/stackChat" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/stackChat/stackChat-tmp/Main.hi" afterPath="$PROJECT_DIR$/.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/stackChat/stackChat-tmp/Main.hi" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/stackChat/stackChat-tmp/Main.o" afterPath="$PROJECT_DIR$/.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/stackChat/stackChat-tmp/Main.o" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/setup-config" afterPath="$PROJECT_DIR$/.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/setup-config" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/stack-build-cache" afterPath="$PROJECT_DIR$/.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/stack-build-cache" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/stack-config-cache" afterPath="$PROJECT_DIR$/.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/stack-config-cache" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.stack-work/install/x86_64-osx/lts-9.8/8.0.2/bin/stackChat" afterPath="$PROJECT_DIR$/.stack-work/install/x86_64-osx/lts-9.8/8.0.2/bin/stackChat" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.stack-work/install/x86_64-osx/lts-9.8/8.0.2/flag-cache/stackChat-0.1.0.0" afterPath="$PROJECT_DIR$/.stack-work/install/x86_64-osx/lts-9.8/8.0.2/flag-cache/stackChat-0.1.0.0" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/stackChat/stackChat-tmp/src/Main.dump-hi" afterPath="$PROJECT_DIR$/.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/stackChat/stackChat-tmp/src/Main.dump-hi" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/Main.hs" afterPath="$PROJECT_DIR$/src/Main.hs" />
     </list>
     <ignored path="$PROJECT_DIR$/.stack-work/" />
@@ -28,8 +18,8 @@
       <file leaf-file-name="Main.hs" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/Main.hs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="125">
-              <caret line="145" column="98" lean-forward="false" selection-start-line="145" selection-start-column="98" selection-end-line="145" selection-end-column="98" />
+            <state relative-caret-position="-775">
+              <caret line="123" column="42" lean-forward="true" selection-start-line="123" selection-start-column="42" selection-end-line="123" selection-end-column="42" />
               <folding />
             </state>
           </provider>
@@ -253,7 +243,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="46585000" />
+    <option name="totallyTimeSpent" value="47357000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="23" width="1680" height="961" extended-state="6" />
@@ -633,8 +623,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/Main.hs">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="125">
-          <caret line="145" column="98" lean-forward="false" selection-start-line="145" selection-start-column="98" selection-end-line="145" selection-end-column="98" />
+        <state relative-caret-position="-775">
+          <caret line="123" column="42" lean-forward="true" selection-start-line="123" selection-start-column="42" selection-end-line="123" selection-end-column="42" />
           <folding />
         </state>
       </provider>
