@@ -96,7 +96,6 @@ newClient id host port handle = do
                 }
 -- >>
 
-
 -- <<Server
 data Server = Server
   { clients :: TVar (Map Int Client)
@@ -112,8 +111,7 @@ newServer = do
 
 -- <<Message
 data Message = Notice String
-             | Tell Int String
-             | Broadcast Int String
+             | Broadcast String
              | Command String
 -- >>
 
@@ -127,7 +125,6 @@ broadcast Server{..} roomRef msg = do
   mapM_ (\client -> sendToRoom roomRef client msg) (Map.elems clientmap)
 
 -- >>
-
 
 
 -- <<sendMessage
@@ -152,20 +149,14 @@ sendToName server@Server{..} id msg = do
     Just client -> sendMessage client msg >> return True
 -- >>
 
-tell :: Server -> Client -> Int -> String -> IO ()
-tell server@Server{..} Client{..} who msg = do
-  ok <- atomically $ sendToName server who (Tell clientId msg)
-  if ok
-     then return ()
-     else hPutStrLn clientHandle (show who ++ " is not connected.")
-
+{-
 heloText :: Server -> Client -> Int  -> IO ()
 heloText server@Server{..} Client{..} id  = do
   ok <- atomically $ sendToName server id (Tell clientId ("HELO text\nIP:"++clientIP++"\nPort:"++"\nStudentID:13326255\n"))
   if ok
      then return ()
      else hPutStrLn clientHandle (show id ++ " is not connected.")
-
+-}
 -- -----------------------------------------------------------------------------
 -- The main server
 
@@ -212,22 +203,7 @@ runClient serv@Server{..} client@Client{..} = do
         continue <- handleMessage serv client msg
         when continue server
 -- >>
-{-
- line <- getUserLines hdl
-        case line of
-             -- If an exception is caught, send a message and break the loop
-             "quit" -> hPutStrLn hdl "Bye!"
 
-             "KILL_SERVICE" -> close parentSock
-
-             "HELO text" -> heloText hdl addr >> loop
-
-             _      -> outputParser line chan joinId >> loop
-        ))
-
-    killThread reader                      -- kill after the loop ends
-    hClose hdl                             -- close the handle
--}
 getUserLines :: Handle -> IO String
 getUserLines hdl = go hdl ""
 
@@ -252,17 +228,15 @@ handleMessage :: Server -> Client -> Message -> IO Bool
 handleMessage server client@Client{..} message =
   case message of
      Notice msg         -> output $ "*** " ++ msg
-     Tell id msg      -> output $ "*" ++ show id ++ "*: " ++ msg
-     Broadcast id msg -> output $ "<" ++ show id ++ ">: " ++ msg
+     Broadcast msg -> output $ msg
      Command msg ->
        case words msg of
            --["KILL_SERVICE"] -> do
              --  atomically $ killService server client
                --return False
            "JOIN_CHATROOM:" : a -> do
-              msg <- joinChatroom client msg
-              atomically $ broadcast server 0 $(Broadcast clientId msg)
-              return True
+              joinChatroom server client msg
+
             {-
            "LEAVE_CHATROOM:" : a -> do
               atomically $ broadcast server 0 $(leaveChatroom (unwords a))
@@ -270,13 +244,12 @@ handleMessage server client@Client{..} message =
            "CHAT:" : a -> do
               atomically $ broadcast server 0 $(chat (unwords a))
               return True
-           -}
+
            ["HELO"] -> do
                           heloText server client clientId
                           return False
-           --"/tell" : who : what -> do
-            --   tell server client who (unwords what)
-             --  return True
+
+             -}
            ["quit"] ->
                return False
            ('/':_):_ -> do
@@ -289,8 +262,8 @@ handleMessage server client@Client{..} message =
 -- >>
 
 
-joinChatroom :: Client -> String -> IO String
-joinChatroom Client{..} a = do
+joinChatroom :: Server -> Client -> String -> IO Bool
+joinChatroom server Client{..} a = do
     let l = lines a
     if length l >= 4
     then do
@@ -300,12 +273,16 @@ joinChatroom Client{..} a = do
       let name = fromMaybe "" (stripPrefix "CLIENT_NAME: " (l !! 3))
 
       roomRefs <- atomically $ readTVar clientRoomRefs
-      atomically $ writeTVar clientRoomRefs $ (read room) : roomRefs
+      atomically $ writeTVar clientRoomRefs $ read room : roomRefs
+      let msg = "JOINED_CHATROOM: "++room ++"\nCLIENT_IP: "++ip++"\nPORT: "++port++"\nROOM_REF: \nJOIN_ID: "++ show clientId ++"\n"
+      atomically $ broadcast server (read room) $(Broadcast  msg)
 
-      return ("JOINED_CHATROOM: "++room ++"\nCLIENT_IP: "++ip++"\nPORT: "++port++"\nROOM_REF: \nJOIN_ID: \n")
 
-    else return "Error"
+    else do
+      let msg = "Error"
+      atomically $ writeTChan clientSendChan $ Notice msg
 
+    return True
 
 {-
 leaveChatroom :: String -> Message
