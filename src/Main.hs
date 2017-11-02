@@ -151,6 +151,8 @@ handleMessage server client@Client{..} message =
 
            "LEAVE_CHATROOM:" : a -> leaveChatroom server client msg
 
+           "DISCONNECT:" : a -> disconnect server client msg
+
            "CHAT:" : a -> chat server client msg
 
            "HELO" : "text" : a -> heloText server client
@@ -182,6 +184,21 @@ joinChatroom server Client{..} a = do
 
     return True
 
+
+disconnect :: Server -> Client -> String -> IO Bool
+disconnect server Client{..} a = do
+  let l = lines a
+  if length l >= 3
+  then do
+    let ip = fromMaybe "" (stripPrefix "DISCONNECT: " (head l))
+    let port = fromMaybe "" (stripPrefix "PORT: " (l !! 1))
+    let name = fromMaybe "" (stripPrefix "CLIENT_NAME: " (l !! 2))
+
+    return False
+
+  else do
+    hPutStrLn clientHandle $ "Unrecognised command: " ++ a
+    return True
 
 leaveChatroom :: Server -> Client -> String -> IO Bool
 leaveChatroom server Client{..} a = do

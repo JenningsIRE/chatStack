@@ -1,11 +1,11 @@
 
 ==================== FINAL INTERFACE ====================
-2017-11-02 00:50:13.29903 UTC
+2017-11-02 00:55:12.502027 UTC
 
 interface main@main:Main 8002
-  interface hash: 0eabf6a8928ce373883e129e9ca73f38
-  ABI hash: b42fd608e5991d871b615c54bb90fc55
-  export-list hash: 592d2f557998ac25acb1b26b615e53a8
+  interface hash: 9bdfdad9211ca7fb1d1c62868568fe82
+  ABI hash: edcc186511ec6f1ce1d3b1e5f66935c9
+  export-list hash: 8dd109c5ba5b158631c4a1f73598eb9a
   orphan hash: e3f907cc77bbc0eb7e4f425dad3f8e77
   flag hash: 4a911ef96c2b9d76f64eec71abf04ce6
   sig of: Nothing
@@ -15,6 +15,7 @@ exports:
   Main.broadcast
   Main.chat
   Main.checkAddRoom
+  Main.disconnect
   Main.getUserLines
   Main.go
   Main.handleMessage
@@ -415,6 +416,31 @@ e182b1ed14a9f5c91cd3f34247bfcfaa
                            ipv8 of s2# { DEFAULT ->
                     (# s2#, client #) } } } } } })
                    w4) -}
+d90088825c2c084c3aa151d101557564
+  $wdisconnect ::
+    GHC.IO.Handle.Types.Handle
+    -> GHC.Base.String
+    -> GHC.Prim.State# GHC.Prim.RealWorld
+    -> (# GHC.Prim.State# GHC.Prim.RealWorld, GHC.Types.Bool #)
+  {- Arity: 3, Strictness: <L,U><S,U><S,U>, Inline: [0],
+     Unfolding: (\ (ww :: GHC.IO.Handle.Types.Handle)
+                   (w :: GHC.Base.String)
+                   (w1 :: GHC.Prim.State# GHC.Prim.RealWorld)[OneShot] ->
+                 case GHC.List.$wlenAcc
+                        @ [GHC.Types.Char]
+                        (Data.OldList.lines w)
+                        0# of ww2 { DEFAULT ->
+                 case GHC.Prim.tagToEnum#
+                        @ GHC.Types.Bool
+                        (GHC.Prim.>=# ww2 3#) of wild {
+                   GHC.Types.False
+                   -> case GHC.IO.Handle.Text.hPutStr2
+                             ww
+                             (GHC.CString.unpackAppendCString# "Unrecognised command: "# w)
+                             GHC.Types.True
+                             w1 of ds1 { (#,#) ipv ipv1 ->
+                      (# ipv, GHC.Types.True #) }
+                   GHC.Types.True -> (# w1, GHC.Types.False #) } }) -}
 f0774f0d5d699901e8a300053ff16c19
   $whandleMessage ::
     Main.Server
@@ -902,6 +928,34 @@ bdcb114a63f982d088c63a7db974f774
      Unfolding: InlineRule (1, True, False)
                 (\ (ds :: Main.Server) ->
                  case ds of wild { Main.Server ds1 ds2 ds3 -> ds2 }) -}
+dcada62f08ca7562bf1689d8e60f48af
+  disconnect ::
+    Main.Server
+    -> Main.Client -> GHC.Base.String -> GHC.Types.IO GHC.Types.Bool
+  {- Arity: 4, Strictness: <L,A><S,1*U(A,A,A,U,A,A)><S,U><S,U>,
+     Unfolding: InlineRule (0, True, True)
+                Main.disconnect1
+                  `cast`
+                (<Main.Server>_R
+                 ->_R <Main.Client>_R
+                 ->_R <GHC.Base.String>_R
+                 ->_R Sym (GHC.Types.N:IO[0] <GHC.Types.Bool>_R)) -}
+55839fb81894bf18b0bdaa33920828da
+  disconnect1 ::
+    Main.Server
+    -> Main.Client
+    -> GHC.Base.String
+    -> GHC.Prim.State# GHC.Prim.RealWorld
+    -> (# GHC.Prim.State# GHC.Prim.RealWorld, GHC.Types.Bool #)
+  {- Arity: 4, Strictness: <L,A><S,1*U(A,A,A,U,A,A)><S,U><S,U>,
+     Inline: INLINE[0],
+     Unfolding: InlineRule (4, True, False)
+                (\ (w :: Main.Server)
+                   (w1 :: Main.Client)
+                   (w2 :: GHC.Base.String)
+                   (w3 :: GHC.Prim.State# GHC.Prim.RealWorld)[OneShot] ->
+                 case w1 of ww { Main.Client ww1 ww2 ww3 ww4 ww5 ww6 ->
+                 Main.$wdisconnect ww4 w2 w3 }) -}
 37ebdf4525ff175f31659559b3d0b0b5
   getUserLines ::
     GHC.IO.Handle.Types.Handle -> GHC.Types.IO GHC.Base.String
