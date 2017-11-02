@@ -43,6 +43,7 @@ type RoomRef = Int
 
 data Client = Client
   { clientId       :: Int
+  , clientName     :: ClientName
   , clientIP       :: String
   , clientPort     :: Int
   , clientHandle   :: Handle
@@ -55,6 +56,7 @@ newClient id host port handle = do
   c <- newTChan
   r <- newTVar Map.empty
   return Client { clientId       = id
+                , clientName     = ""
                 , clientIP       = host
                 , clientPort     = port
                 , clientHandle   = handle
@@ -62,10 +64,35 @@ newClient id host port handle = do
                 , clientRoomRefs = r
                 }
 
+dupClient :: Client -> String -> String -> Int -> STM Client
+dupClient Client{..} name ip port    = do
+  return Client { clientId       = clientId
+                  , clientName     = name
+                  , clientIP       = ip
+                  , clientPort     = port
+                  , clientHandle   = clientHandle
+                  , clientSendChan = clientSendChan
+                  , clientRoomRefs = clientRoomRefs
+                  }
+
+data Room = Room
+  { roomRef     :: RoomRef
+  , roomName    :: RoomName
+  , roomClients :: TVar (Map Int Client)
+  }
+
+newRoom :: RoomRef -> RoomName -> STM Room
+newRoom ref name = do
+  c <- newTVar Map.empty
+  return Room { roomRef      = ref
+               , roomName       = name
+               , roomClients  = c
+               }
+
 data Server = Server
   { sock      :: Socket
     , clients :: TVar (Map Int Client)
-    , rooms   :: TVar (Map RoomName RoomRef)
+    , rooms   :: TVar (Map RoomName Room)
   }
 
 newServer :: Socket -> IO Server
@@ -77,16 +104,16 @@ newServer s  = do
 data Message = Broadcast String
              | Command String
 
-broadcast :: Server -> Int -> Message -> STM ()
-broadcast Server{..} roomRef msg = do
-  clientmap <- readTVar clients
-  mapM_ (\client -> sendToRoom roomRef client msg) (Map.elems clientmap)
-
-sendToRoom :: Int -> Client -> Message -> STM ()
-sendToRoom roomRef Client{..} msg = do
+broadcast :: Server -> Room -> Message -> STM ()
+broadcast Server{..} Room{..} msg = do
+  clientmap <- readTVar roomClients
+  mapM_ (\client -> writeTChan (clientSendChan client) msg) (Map.elems clientmap)
+{-
+sendToRoom :: RoomName -> Client -> Message -> STM ()
+sendToRoom name Client{..} msg = do
   roomRefs <- readTVar clientRoomRefs
-  when (roomRef `elem` roomRefs) (writeTChan clientSendChan msg)
-
+  when (name `elem` roomRefs) (writeTChan clientSendChan msg)
+-}
 talk :: String -> Int -> Handle -> Server -> Int ->  IO ()
 talk host port handle server@Server{..} joinId = do
   hSetNewlineMode handle universalNewlineMode
@@ -139,7 +166,7 @@ handleMessage server client@Client{..} message =
        case words msg of
 
            "JOIN_CHATROOM:" : a -> joinChatroom server client msg
-
+{-
            "LEAVE_CHATROOM:" : a -> leaveChatroom server client msg
 
            "DISCONNECT:" : a -> disconnect server client msg
@@ -149,32 +176,45 @@ handleMessage server client@Client{..} message =
            "HELO" : "text" : a -> heloText server client
 
            "KILL_SERVICE" : a -> killService server client
-
+-}
            _ -> do
                hPutStrLn clientHandle $ "Unrecognised command: " ++ msg
                return True
 
 joinChatroom :: Server -> Client -> String -> IO Bool
-joinChatroom server Client{..} a = do
+joinChatroom server@Server{..} client@Client{..} a = do
     let l = lines a
     if length l >= 4
     then do
-      let room = fromMaybe "" (stripPrefix "JOIN_CHATROOM: " (head l))
+      let name = fromMaybe "" (stripPrefix "JOIN_CHATROOM: " (head l))
       let ip = fromMaybe "" (stripPrefix "CLIENT_IP: " (l !! 1))
       let port = fromMaybe "" (stripPrefix "PORT: " (l !! 2))
       let name = fromMaybe "" (stripPrefix "CLIENT_NAME: " (l !! 3))
 
-      roomRefs <- atomically $ readTVar clientRoomRefs
-      let r = read room
-      atomically $ writeTVar clientRoomRefs $ Map.insert r r roomRefs
-      let msg = "JOINED_CHATROOM: "++room ++"\nCLIENT_IP: "++ip++"\nPORT: "++port++"\nROOM_REF: \nJOIN_ID: "++ show clientId ++"\n"
-      atomically $ broadcast server r $(Broadcast  msg)
+      roomMap <- atomically $ readTVar rooms
+      case Map.lookup name roomMap of
+       Nothing -> do
+         room <- atomically $ newRoom 0 name
+         atomically $ writeTVar rooms $ Map.insert name room roomMap
+
+         clientRefs <- atomically $ readTVar (roomClients room)
+         dupClient <- atomically $ dupClient client name ip (read port)
+         atomically ( writeTVar (roomClients room)  (Map.insert clientId dupClient clientRefs))
+         let msg = "JOINED_CHATROOM: " ++ name ++ "\nCLIENT_IP: "++ip++"\nPORT: "++port++"\nROOM_REF:" ++ show (roomRef room) ++ "\nJOIN_ID: "++ show clientId ++"\n"
+         atomically $ broadcast server room  $(Broadcast  msg)
+       Just room -> do
+         clientRefs <- atomically $ readTVar (roomClients room)
+         dupClient <- atomically $ dupClient client name ip (read port)
+         atomically ( writeTVar (roomClients room)  (Map.insert clientId dupClient clientRefs))
+         let msg = "JOINED_CHATROOM: " ++ name ++ "\nCLIENT_IP: "++ip++"\nPORT: "++port++"\nROOM_REF:" ++ show (roomRef room) ++ "\nJOIN_ID: "++ show clientId ++"\n"
+         atomically $ broadcast server room  $(Broadcast  msg)
+
 
     else hPutStrLn clientHandle $ "Unrecognised command: " ++ a
 
     return True
 
-
+{-
 disconnect :: Server -> Client -> String -> IO Bool
 disconnect server Client{..} a = do
   let l = lines a
@@ -236,3 +276,5 @@ killService :: Server -> Client  -> IO Bool
 killService server@Server{..} Client{..}  = do
   sClose sock
   return True
+
+  -}
