@@ -92,19 +92,11 @@ talk host port handle server@Server{..} joinId = do
   hSetNewlineMode handle universalNewlineMode
       -- Swallow carriage returns sent by telnet clients
   hSetBuffering handle LineBuffering
-  client <- checkAddRoom server joinId host port handle
-  runClient server client -- <3>
-      `finally` removeClient server joinId
-
-checkAddRoom :: Server -> Int -> String -> Int -> Handle -> IO Client
-checkAddRoom server@Server{..} id host port handle = atomically $ do
-  clientmap <- readTVar clients
-  client <- newClient id host port handle
-  writeTVar clients $ Map.insert id client clientmap
-  return client
-
-removeClient :: Server -> Int -> IO ()
-removeClient server@Server{..} id = atomically $ modifyTVar' clients $ Map.delete id
+  clientmap <- atomically $ readTVar clients
+  client <- atomically $ newClient joinId host port handle
+  atomically $ writeTVar clients $ Map.insert joinId client clientmap
+  runClient server client
+      `finally` (atomically $ modifyTVar' clients $ Map.delete joinId)
 
 runClient :: Server -> Client -> IO ()
 runClient serv@Server{..} client@Client{..} = do
@@ -146,7 +138,6 @@ handleMessage server client@Client{..} message =
      Command msg ->
        case words msg of
 
-
            "JOIN_CHATROOM:" : a -> joinChatroom server client msg
 
            "LEAVE_CHATROOM:" : a -> leaveChatroom server client msg
@@ -178,7 +169,6 @@ joinChatroom server Client{..} a = do
       atomically $ writeTVar clientRoomRefs $ Map.insert r r roomRefs
       let msg = "JOINED_CHATROOM: "++room ++"\nCLIENT_IP: "++ip++"\nPORT: "++port++"\nROOM_REF: \nJOIN_ID: "++ show clientId ++"\n"
       atomically $ broadcast server r $(Broadcast  msg)
-
 
     else hPutStrLn clientHandle $ "Unrecognised command: " ++ a
 

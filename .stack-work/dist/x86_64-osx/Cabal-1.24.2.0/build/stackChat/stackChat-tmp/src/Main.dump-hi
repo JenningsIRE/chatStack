@@ -1,11 +1,11 @@
 
 ==================== FINAL INTERFACE ====================
-2017-11-02 00:55:12.502027 UTC
+2017-11-02 03:45:19.160406 UTC
 
 interface main@main:Main 8002
-  interface hash: 9bdfdad9211ca7fb1d1c62868568fe82
-  ABI hash: edcc186511ec6f1ce1d3b1e5f66935c9
-  export-list hash: 8dd109c5ba5b158631c4a1f73598eb9a
+  interface hash: 055b9d1566939403c4a6a005c0876725
+  ABI hash: ebff4c15d219e32cdf71dd6e528c9d60
+  export-list hash: 79268537f1990b3061b67d3dfaa780e8
   orphan hash: e3f907cc77bbc0eb7e4f425dad3f8e77
   flag hash: 4a911ef96c2b9d76f64eec71abf04ce6
   sig of: Nothing
@@ -14,7 +14,6 @@ interface main@main:Main 8002
 exports:
   Main.broadcast
   Main.chat
-  Main.checkAddRoom
   Main.disconnect
   Main.getUserLines
   Main.go
@@ -27,7 +26,6 @@ exports:
   Main.mainLoop
   Main.newClient
   Main.newServer
-  Main.removeClient
   Main.runClient
   Main.sendToRoom
   Main.talk
@@ -333,89 +331,6 @@ d6831ef04cb9301b090dfae6f7bb7ec7
     -> (# GHC.Prim.State# GHC.Prim.RealWorld, GHC.Types.Bool #)
   {- Arity: 4, Strictness: <L,1*U(A,1*U(U),A)><L,U><S,U><S,U>,
      Inline: [0] -}
-e182b1ed14a9f5c91cd3f34247bfcfaa
-  $wcheckAddRoom ::
-    GHC.Prim.TVar#
-      GHC.Prim.RealWorld (Data.Map.Base.Map GHC.Types.Int Main.Client)
-    -> GHC.Types.Int
-    -> GHC.Base.String
-    -> GHC.Types.Int
-    -> GHC.IO.Handle.Types.Handle
-    -> GHC.Prim.State# GHC.Prim.RealWorld
-    -> (# GHC.Prim.State# GHC.Prim.RealWorld, Main.Client #)
-  {- Arity: 6, Strictness: <S,U><L,U(U)><L,U><L,U><L,U><S,U>,
-     Inline: [0],
-     Unfolding: (\ (ww :: GHC.Prim.TVar#
-                            GHC.Prim.RealWorld (Data.Map.Base.Map GHC.Types.Int Main.Client))
-                   (w :: GHC.Types.Int)
-                   (w1 :: GHC.Base.String)
-                   (w2 :: GHC.Types.Int)
-                   (w3 :: GHC.IO.Handle.Types.Handle)
-                   (w4 :: GHC.Prim.State# GHC.Prim.RealWorld)[OneShot] ->
-                 GHC.Prim.atomically#
-                   @ Main.Client
-                   (\ (s :: GHC.Prim.State# GHC.Prim.RealWorld)[OneShot] ->
-                    case GHC.Prim.readTVar#
-                           @ GHC.Prim.RealWorld
-                           @ (Data.Map.Base.Map GHC.Types.Int Main.Client)
-                           ww
-                           s of ds1 { (#,#) ipv ipv1 ->
-                    case GHC.Prim.newTVar#
-                           @ (Control.Concurrent.STM.TChan.TList Main.Message)
-                           @ GHC.Prim.RealWorld
-                           (Control.Concurrent.STM.TChan.TNil @ Main.Message)
-                           ipv of ds { (#,#) ipv2 ipv3 ->
-                    let {
-                      hole :: GHC.Conc.Sync.TVar
-                                (Control.Concurrent.STM.TChan.TList Main.Message)
-                        {- Strictness: m -}
-                      = GHC.Conc.Sync.TVar
-                          @ (Control.Concurrent.STM.TChan.TList Main.Message)
-                          ipv3
-                    } in
-                    case GHC.Prim.newTVar#
-                           @ (GHC.Conc.Sync.TVar
-                                (Control.Concurrent.STM.TChan.TList Main.Message))
-                           @ GHC.Prim.RealWorld
-                           hole
-                           ipv2 of ds2 { (#,#) ipv4 ipv5 ->
-                    case GHC.Prim.newTVar#
-                           @ (GHC.Conc.Sync.TVar
-                                (Control.Concurrent.STM.TChan.TList Main.Message))
-                           @ GHC.Prim.RealWorld
-                           hole
-                           ipv4 of ds3 { (#,#) ipv6 ipv7 ->
-                    case GHC.Prim.newTVar#
-                           @ (Data.Map.Base.Map GHC.Types.Int GHC.Types.Int)
-                           @ GHC.Prim.RealWorld
-                           (Data.Map.Base.Tip @ GHC.Types.Int @ GHC.Types.Int)
-                           ipv6 of ds4 { (#,#) ipv8 ipv9 ->
-                    let {
-                      ipv10 :: Control.Concurrent.STM.TChan.TChan Main.Message
-                        {- Strictness: m -}
-                      = Control.Concurrent.STM.TChan.TChan @ Main.Message ipv5 ipv7
-                    } in
-                    let {
-                      ipv11 :: GHC.Conc.Sync.TVar
-                                 (Data.Map.Base.Map GHC.Types.Int GHC.Types.Int)
-                        {- Strictness: m -}
-                      = GHC.Conc.Sync.TVar
-                          @ (Data.Map.Base.Map GHC.Types.Int GHC.Types.Int)
-                          ipv9
-                    } in
-                    let {
-                      client :: Main.Client {- Strictness: m -}
-                      = Main.Client w w1 w2 w3 ipv10 ipv11
-                    } in
-                    case GHC.Prim.writeTVar#
-                           @ GHC.Prim.RealWorld
-                           @ (Data.Map.Base.Map GHC.Types.Int Main.Client)
-                           ww
-                           (case w of ww1 { GHC.Types.I# ww2 ->
-                            Main.$w$sgo1 @ Main.Client ww2 client ipv1 })
-                           ipv8 of s2# { DEFAULT ->
-                    (# s2#, client #) } } } } } })
-                   w4) -}
 d90088825c2c084c3aa151d101557564
   $wdisconnect ::
     GHC.IO.Handle.Types.Handle
@@ -826,47 +741,6 @@ d8219f0e4dc1d23852876ef490bc495a
                    (w3 :: GHC.Prim.State# GHC.Prim.RealWorld)[OneShot] ->
                  case w1 of ww { Main.Client ww1 ww2 ww3 ww4 ww5 ww6 ->
                  Main.$wchat w ww4 w2 w3 }) -}
-4dee66950a695e212c8dc29a6b0fc49f
-  checkAddRoom ::
-    Main.Server
-    -> GHC.Types.Int
-    -> GHC.Base.String
-    -> GHC.Types.Int
-    -> GHC.IO.Handle.Types.Handle
-    -> GHC.Types.IO Main.Client
-  {- Arity: 6,
-     Strictness: <S(LS(S)L),1*U(A,1*U(U),A)><L,U(U)><L,U><L,U><L,U><S,U>,
-     Unfolding: InlineRule (0, True, True)
-                Main.checkAddRoom1
-                  `cast`
-                (<Main.Server>_R
-                 ->_R <GHC.Types.Int>_R
-                 ->_R <GHC.Base.String>_R
-                 ->_R <GHC.Types.Int>_R
-                 ->_R <GHC.IO.Handle.Types.Handle>_R
-                 ->_R Sym (GHC.Types.N:IO[0] <Main.Client>_R)) -}
-a0d02f9c8375670c83b9af6518578d6d
-  checkAddRoom1 ::
-    Main.Server
-    -> GHC.Types.Int
-    -> GHC.Base.String
-    -> GHC.Types.Int
-    -> GHC.IO.Handle.Types.Handle
-    -> GHC.Prim.State# GHC.Prim.RealWorld
-    -> (# GHC.Prim.State# GHC.Prim.RealWorld, Main.Client #)
-  {- Arity: 6,
-     Strictness: <S(LS(S)L),1*U(A,1*U(U),A)><L,U(U)><L,U><L,U><L,U><S,U>,
-     Inline: INLINE[0],
-     Unfolding: InlineRule (6, True, False)
-                (\ (w :: Main.Server)
-                   (w1 :: GHC.Types.Int)
-                   (w2 :: GHC.Base.String)
-                   (w3 :: GHC.Types.Int)
-                   (w4 :: GHC.IO.Handle.Types.Handle)
-                   (w5 :: GHC.Prim.State# GHC.Prim.RealWorld)[OneShot] ->
-                 case w of ww { Main.Server ww1 ww2 ww3 ->
-                 case ww2 of ww4 { GHC.Conc.Sync.TVar ww5 ->
-                 Main.$wcheckAddRoom ww5 w1 w2 w3 w4 w5 } }) -}
 00887589f8233fbc7cca2e061bb7822f
   clientHandle :: Main.Client -> GHC.IO.Handle.Types.Handle
   RecSel Left Main.Client
@@ -1306,47 +1180,6 @@ f8cde3c83fa87c13bd30f3babb00cff2
                       (GHC.Conc.Sync.TVar
                          @ (Data.Map.Base.Map Main.RoomName Main.RoomRef)
                          ipv3) #) } }) -}
-8ffdc40fbfce0603f548419f8886ae79
-  removeClient :: Main.Server -> GHC.Types.Int -> GHC.Types.IO ()
-  {- Arity: 3,
-     Strictness: <S(LS(S)L),1*U(A,1*U(U),A)><S,1*U(U)><S,U>,
-     Unfolding: InlineRule (0, True, True)
-                Main.removeClient1
-                  `cast`
-                (<Main.Server>_R
-                 ->_R <GHC.Types.Int>_R
-                 ->_R Sym (GHC.Types.N:IO[0] <()>_R)) -}
-b93d949b08ed47079c67784f2bb935f4
-  removeClient1 ::
-    Main.Server
-    -> GHC.Types.Int
-    -> GHC.Prim.State# GHC.Prim.RealWorld
-    -> (# GHC.Prim.State# GHC.Prim.RealWorld, () #)
-  {- Arity: 3,
-     Strictness: <S(LS(S)L),1*U(A,1*U(U),A)><S,1*U(U)><S,U>,
-     Unfolding: InlineRule (3, True, False)
-                (\ (server :: Main.Server)
-                   (id :: GHC.Types.Int)
-                   (eta :: GHC.Prim.State# GHC.Prim.RealWorld)[OneShot] ->
-                 case server of wild { Main.Server ds ds1 ds2 ->
-                 GHC.Prim.atomically#
-                   @ ()
-                   (\ (eta1 :: GHC.Prim.State# GHC.Prim.RealWorld)[OneShot] ->
-                    case ds1 of wild1 { GHC.Conc.Sync.TVar tvar# ->
-                    case GHC.Prim.readTVar#
-                           @ GHC.Prim.RealWorld
-                           @ (Data.Map.Base.Map GHC.Types.Int Main.Client)
-                           tvar#
-                           eta1 of ds3 { (#,#) ipv ipv1 ->
-                    case Main.$sdelete_$sgo10 @ Main.Client id ipv1 of vx { DEFAULT ->
-                    case GHC.Prim.writeTVar#
-                           @ GHC.Prim.RealWorld
-                           @ (Data.Map.Base.Map GHC.Types.Int Main.Client)
-                           tvar#
-                           vx
-                           ipv of s2# { DEFAULT ->
-                    (# s2#, GHC.Tuple.() #) } } } })
-                   eta }) -}
 8f8d98129df57cb4fa297d959f8ae286
   rooms ::
     Main.Server
