@@ -20,6 +20,7 @@ import Control.Monad
 import Text.Printf
 import Data.Maybe
 import Data.List
+import GHC.Conc.Sync
 
 main :: IO ()
 main = withSocketsDo $ do
@@ -62,7 +63,7 @@ newClient id host port handle = do
                 }
 
 dupClient :: Client -> String -> String -> Int -> STM Client
-dupClient Client{..} name ip port    = do
+dupClient Client{..} name ip port    =
   return Client { clientId       = clientId
                   , clientName     = name
                   , clientIP       = ip
@@ -130,7 +131,12 @@ runClient serv@Server{..} client@Client{..} = do
  where
   receive = forever $ do
     msg <- getUserLines clientHandle
-    atomically $ writeTChan clientSendChan (Command msg)
+    if head  (words msg) == "CHAT:"
+    then do
+      x <- getMessageLines clientHandle
+      atomically $ writeTChan clientSendChan (Command (msg ++ x))
+    else do
+      atomically $ writeTChan clientSendChan (Command msg)
 
   server = join $ atomically $ do
     msg <- readTChan clientSendChan
@@ -139,20 +145,34 @@ runClient serv@Server{..} client@Client{..} = do
         when continue server
 
 getUserLines :: Handle -> IO String
-getUserLines hdl = go hdl ""
+getUserLines hdl = do
+  putStrLn "test"
+  go hdl ""
 
 go :: Handle -> String -> IO String
 go hdl contents = do
   line <- hGetLine hdl
-  case line of
-               "KILL_SERVICE" -> return "KILL_SERVICE"
+  case words line of
+               "KILL_SERVICE" : a -> return "KILL_SERVICE"
 
-               "HELO text" -> return "HELO text"
+               "HELO" : a -> return "HELO BASE_TEST"
 
-               "" -> return contents
+               "CLIENT_NAME:" : a -> return (contents ++ line ++ "\n")
+
+               --"" -> return contents
 
                _      -> go hdl (contents ++ line ++ "\n")
 
+getMessageLines :: Handle -> IO String
+getMessageLines hdl = gm hdl ""
+
+gm :: Handle -> String -> IO String
+gm hdl contents = do
+  line <- hGetLine hdl
+  case line of
+               "" -> return contents
+
+               _      -> gm hdl (contents ++ line ++ "\n")
 
 handleMessage :: Server -> Client -> Message -> IO Bool
 handleMessage server client@Client{..} message =
@@ -171,7 +191,7 @@ handleMessage server client@Client{..} message =
 
            "CHAT:" : a -> chat server client msg
 
-           "HELO" : "text" : a -> heloText server client
+           "HELO" : "BASE_TEST" : a -> heloText server client
 
            "KILL_SERVICE" : a -> killService server client
 
@@ -200,17 +220,20 @@ joinChatroom server@Server{..} client@Client{..} a = do
          clientRefs <- readTVar (roomClients room)
          dupClient <- dupClient client name ip (read port)
          writeTVar (roomClients room)  (Map.insert clientId dupClient clientRefs)
-         let msg = "JOINED_CHATROOM: " ++ name ++ "\nCLIENT_IP: "++ip++"\nPORT: "++port++"\nROOM_REF:" ++ show (roomRef room) ++ "\nJOIN_ID: "++ show clientId ++"\n"
-         broadcast server room  $(Broadcast  msg)
+         unsafeIOToSTM (hPutStrLn clientHandle  ( "JOINED_CHATROOM: " ++ name ++ "\nSERVER_IP: 89.100.123.193"++"\nPORT: 44444"++"\nROOM_REF:" ++ show (roomRef room) ++ "\nJOIN_ID: "++ show clientId))
+         let msg = "CHAT: "++show ref ++"\nCLIENT_NAME: "++nick++"\nMESSAGE: " ++ nick ++ " joined room"
+         broadcast server room $(Broadcast  msg)
        Just room -> atomically $ do
          clientRefs <- readTVar (roomClients room)
          dupClient <- dupClient client name ip (read port)
          writeTVar (roomClients room)  (Map.insert clientId dupClient clientRefs)
-         let msg = "JOINED_CHATROOM: " ++ name ++ "\nCLIENT_IP: "++ip++"\nPORT: "++port++"\nROOM_REF:" ++ show (roomRef room) ++ "\nJOIN_ID: "++ show clientId ++"\n"
-         broadcast server room  $(Broadcast  msg)
+         unsafeIOToSTM (hPutStrLn clientHandle  $ "JOINED_CHATROOM: " ++ name ++ "\nSERVER_IP: 89.100.123.193"++"\nPORT: 44444"++"\nROOM_REF:" ++ show (roomRef room) ++ "\nJOIN_ID: "++ show clientId)
+         let msg = "CHAT: "++show (roomRef room) ++"\nCLIENT_NAME: "++nick++"\nMESSAGE: joined room"
+         broadcast server room $(Broadcast  msg)
 
 
     else hPutStrLn clientHandle $ "Unrecognised command: " ++ a
+
 
     return True
 
@@ -261,7 +284,7 @@ chat server@Server{..} Client{..} a = do
     let name = fromMaybe "" (stripPrefix "CHAT: " (head l))
     let id = fromMaybe "" (stripPrefix "JOIN_ID: " (l !! 1))
     let nick = fromMaybe "" (stripPrefix "CLIENT_NAME: " (l !! 2))
-    let message = fromMaybe "" (stripPrefix "MESSAGE: " (unlines(drop 3 l)))
+    let message = fromMaybe "" (stripPrefix "MESSAGE: " (unlines(drop 2 l)))
 
     roomMap <- atomically $ readTVar rooms
     case Map.lookup name roomMap of
@@ -276,7 +299,8 @@ chat server@Server{..} Client{..} a = do
 
 heloText :: Server -> Client  -> IO Bool
 heloText server@Server{..} Client{..}  = do
-  hPutStrLn clientHandle $ "HELO text\nIP:"++clientIP++"\nPort:"++ show clientPort++"\nStudentID:13326255\n"
+  putStrLn $ "HELO BASE_TEST\nIP:"++clientIP++"\nPort:"++ show clientPort++"\nStudentID:13326255\n"
+  hPutStrLn clientHandle $ "HELO BASE_TEST\nIP:"++clientIP++"\nPort:"++ show clientPort++"\nStudentID:13326255\n"
   return True
 
 killService :: Server -> Client  -> IO Bool
