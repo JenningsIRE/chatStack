@@ -1,10 +1,10 @@
 
 ==================== FINAL INTERFACE ====================
-2017-11-19 02:02:12.370525 UTC
+2017-11-24 01:20:22.388858 UTC
 
 interface main@main:Main 8002
-  interface hash: 3aa6a6fb41221aa1ce19739c24682807
-  ABI hash: b71ab4281c0285e3cf53b6a39d03a0c8
+  interface hash: aa1ca2847c3474ef7e718f9bb956ab0c
+  ABI hash: 12b7db6349540befa9d5980a2a96b831
   export-list hash: 06d1df09ed38a5b75fe0f5abdc0be36e
   orphan hash: e3f907cc77bbc0eb7e4f425dad3f8e77
   flag hash: 4a911ef96c2b9d76f64eec71abf04ce6
@@ -364,7 +364,7 @@ d6831ef04cb9301b090dfae6f7bb7ec7
     -> (# GHC.Prim.State# GHC.Prim.RealWorld, GHC.Types.Bool #)
   {- Arity: 5, Strictness: <L,1*U(U)><L,1*U(U)><L,U><S,U><S,U>,
      Inline: [0] -}
-348cdf67866516ab078c64dc3b5d6d1a
+584720e17a44267351eb697584424949
   $wdisconnect ::
     GHC.IO.Handle.Types.Handle
     -> GHC.Base.String
@@ -405,7 +405,7 @@ d6831ef04cb9301b090dfae6f7bb7ec7
                                    ww11 } })
                                 (GHC.Types.[] @ Text.Printf.UPrintf))
                              w1 of ds1 { (#,#) ipv ipv1 ->
-                      (# ipv, GHC.Types.True #) }
+                      (# ipv, GHC.Types.False #) }
                    GHC.Types.True -> (# w1, GHC.Types.False #) } }) -}
 b17620cae8c79d2da411698ba3e52d91
   $whandleMessage ::
@@ -691,7 +691,7 @@ deda02b90b6d61308f5451c5389fa450
      Unfolding: InlineRule (1, True, False)
                 (\ (ds :: Main.Server) ->
                  case ds of wild { Main.Server ds1 ds2 ds3 ds4 ds5 -> ds3 }) -}
-5b7a494d187da1051f91006f12f2f64c
+a49d97902fe734bf8b3a8bc53301c4c4
   disconnect ::
     Main.Server
     -> Main.Client -> GHC.Base.String -> GHC.Types.IO GHC.Types.Bool
@@ -703,7 +703,7 @@ deda02b90b6d61308f5451c5389fa450
                  ->_R <Main.Client>_R
                  ->_R <GHC.Base.String>_R
                  ->_R Sym (GHC.Types.N:IO[0] <GHC.Types.Bool>_R)) -}
-8bd47984b34c94e9e7bcebd2b9e75856
+52c73fa4db81b085eacb4f12896c213c
   disconnect1 ::
     Main.Server
     -> Main.Client
@@ -719,10 +719,11 @@ deda02b90b6d61308f5451c5389fa450
                    (w3 :: GHC.Prim.State# GHC.Prim.RealWorld)[OneShot] ->
                  case w1 of ww { Main.Client ww1 ww2 ww3 ww4 ww5 ww6 ->
                  Main.$wdisconnect ww5 w2 w3 }) -}
-9b7753d106f213baf6158f1931f127bc
+983e5bdfd7192a0bbfb2b11a2a76396a
   disconnect2 :: [GHC.Types.Char]
   {- Unfolding: (GHC.CString.unpackCString#
-                   "Unrecognised command: %s\n"#) -}
+                   "ERROR_CODE: 1 \n\
+                   \ERROR_DESCRIPTION: Unrecognised command: %s\n"#) -}
 f14f5a4043c6ebe19250067e1668e5bf
   dupClient ::
     Main.Client
@@ -990,7 +991,7 @@ e769102546a0b594b6f1d0ebfde2b856
                  case w of ww { Main.Server ww1 ww2 ww3 ww4 ww5 ->
                  case w1 of ww6 { Main.Client ww7 ww8 ww9 ww10 ww11 ww12 ->
                  Main.$wjoinChatroom ww2 ww4 ww5 ww7 ww10 ww11 ww12 w2 w3 } }) -}
-5dda9f19006070f7932fc1c51f6db419
+fea45f9d8b1216b0f18009c3c3ed4697
   killService ::
     Main.Server -> Main.Client -> GHC.Types.IO GHC.Types.Bool
   {- Arity: 3,
@@ -1001,7 +1002,7 @@ e769102546a0b594b6f1d0ebfde2b856
                 (<Main.Server>_R
                  ->_R <Main.Client>_R
                  ->_R Sym (GHC.Types.N:IO[0] <GHC.Types.Bool>_R)) -}
-99b36ca7d02e3123ede771cf6b2fae61
+e8a1ca663ce0afcb9fb53914b5010601
   killService1 ::
     Main.Server
     -> Main.Client
@@ -1018,7 +1019,7 @@ e769102546a0b594b6f1d0ebfde2b856
                  case ds1 of ww { Network.Socket.Types.MkSocket ww1 ww2 ww3 ww4 ww5 ->
                  case ww5 of ww6 { GHC.MVar.MVar ww7 ->
                  case Network.Socket.$wclose ww1 ww7 eta of ds12 { (#,#) ipv ipv1 ->
-                 (# ipv, GHC.Types.True #) } } } } }) -}
+                 (# ipv, GHC.Types.False #) } } } } }) -}
 a9fd7a9ce7a57c0888e7afcaae00792c
   leaveChatroom ::
     Main.Server

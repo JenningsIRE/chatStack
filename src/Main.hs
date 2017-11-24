@@ -188,12 +188,13 @@ handleMessage server client@Client{..} message =
            "KILL_SERVICE" : a -> killService server client
 
            _ -> do
-               hPrintf clientHandle "Unrecognised command: %s\n"  msg
-               return True
+               hPrintf clientHandle "ERROR_CODE: 1 \nERROR_DESCRIPTION: Unrecognised command: %s\n"  msg
+               return False
 
 joinChatroom :: Server -> Client -> String -> IO Bool
 joinChatroom server@Server{..} client@Client{..} a = do
     let l = lines a
+    let test = True
     if length l >= 4
     then do
       let name = fromMaybe "" (stripPrefix "JOIN_CHATROOM: " (head l))
@@ -215,10 +216,11 @@ joinChatroom server@Server{..} client@Client{..} a = do
 
        Just room -> atomically $ joinChat room (roomRef room) name ip port nick client server
 
-    else hPrintf clientHandle  "Unrecognised command: %s\n" a
+    else do
+      let test = False
+      hPrintf clientHandle  "ERROR_CODE: 1 \nERROR_DESCRIPTION: Unrecognised command: %s\n" a
 
-
-    return True
+    return test
 
 joinChat :: Room -> Int -> String -> String -> String -> String -> Client -> Server -> STM ()
 joinChat room ref name ip port nick client@Client{..} server@Server{..} = do
@@ -241,12 +243,13 @@ disconnect server Client{..} a = do
     return False
 
   else do
-    hPrintf clientHandle  "Unrecognised command: %s\n" a
-    return True
+    hPrintf clientHandle  "ERROR_CODE: 1 \nERROR_DESCRIPTION: Unrecognised command: %s\n" a
+    return False
 
 leaveChatroom :: Server -> Client -> String -> IO Bool
 leaveChatroom server@Server{..} Client{..} a = do
   let l = lines a
+  let test = True
   if length l >= 3
   then do
     let ref = fromMaybe "" (stripPrefix "LEAVE_CHATROOM: " (head l))
@@ -254,25 +257,33 @@ leaveChatroom server@Server{..} Client{..} a = do
     let nick = fromMaybe "" (stripPrefix "CLIENT_NAME: " (l !! 2))
     refMap <- atomically $ readTVar refs
     case Map.lookup ref refMap of
-        Nothing -> hPrintf clientHandle "Room does not exist: %s\n" ref
-        Just name -> do
-                     roomMap <- atomically $ readTVar rooms
-                     case Map.lookup name roomMap of
-                        Nothing -> hPrintf clientHandle "Room does not exist: " name
-                        Just room -> atomically $ do
-                          clientRefs <- readTVar (roomClients room)
-                          writeTVar (roomClients room)  (Map.delete clientId  clientRefs)
-                          let msg = "LEFT_CHATROOM: "++ref ++"\nJOIN_ID: " ++ show clientId
-                          broadcast server room $(Broadcast  msg)
-                          unsafeIOToSTM $ hPutStrLn clientHandle msg
+      Nothing -> do
+        let test = False
+        hPrintf clientHandle "ERROR_CODE: 2 \nERROR_DESCRIPTION:Room does not exist: %s\n" ref
 
-  else hPrintf clientHandle "Unrecognised command: %s\n" a
+      Just name -> do
+         roomMap <- atomically $ readTVar rooms
+         case Map.lookup name roomMap of
+            Nothing -> do
+              let test = False
+              hPrintf clientHandle "ERROR_CODE: 3 \nERROR_DESCRIPTION:Room does not exist: %s\n" name
+            Just room -> atomically $ do
+              clientRefs <- readTVar (roomClients room)
+              writeTVar (roomClients room)  (Map.delete clientId  clientRefs)
+              let msg = "LEFT_CHATROOM: "++ref ++"\nJOIN_ID: " ++ show clientId
+              broadcast server room $(Broadcast  msg)
+              unsafeIOToSTM $ hPutStrLn clientHandle msg
 
-  return True
+  else do
+    let test = False
+    hPrintf clientHandle "ERROR_CODE: 1 \nERROR_DESCRIPTION: Unrecognised command: %s\n" a
+
+  return test
 
 chat :: Server -> Client -> String -> IO Bool
 chat server@Server{..} Client{..} a = do
   let l = lines a
+  let test = True
   if length l >= 4
   then do
     let ref = fromMaybe "" (stripPrefix "CHAT: " (head l))
@@ -282,18 +293,25 @@ chat server@Server{..} Client{..} a = do
 
     refMap <- atomically $ readTVar refs
     case Map.lookup ref refMap of
-        Nothing -> hPrintf clientHandle "Room does not exist: %s\n" ref
+        Nothing -> do
+          let test = False
+          hPrintf clientHandle "ERROR_CODE: 2 \nERROR_DESCRIPTION:Room does not exist: %s\n" ref
         Just name -> do
           roomMap <- atomically $ readTVar rooms
           case Map.lookup name roomMap of
-             Nothing -> hPrintf clientHandle "Room does not exist: %s\n" name
+             Nothing -> do
+               let test = False
+               hPrintf clientHandle "ERROR_CODE: 3 \nERROR_DESCRIPTION:Room does not exist: %s\n" name
              Just room -> atomically $ do
               let msg = "CHAT: "++ref ++"\nCLIENT_NAME: "++nick++"\nMESSAGE: "++message
               broadcast server room $(Broadcast  msg)
 
-  else hPrintf clientHandle "Unrecognised command: %s\n" a
+  else do
+    let test = False
+    hPrintf clientHandle "ERROR_CODE: 1 \nERROR_DESCRIPTION: Unrecognised command: %s\n" a
 
-  return True
+
+  return test
 
 heloText :: Server -> Client -> String -> IO Bool
 heloText server@Server{..} Client{..} t = do
@@ -304,4 +322,4 @@ heloText server@Server{..} Client{..} t = do
 killService :: Server -> Client  -> IO Bool
 killService server@Server{..} Client{..}  = do
   sClose sock
-  return True
+  return False
